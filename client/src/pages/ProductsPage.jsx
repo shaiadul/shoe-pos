@@ -186,7 +186,7 @@ export default function ProductsPage() {
                     <td className="table-cell">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-base overflow-hidden shrink-0">
-                          {p.images?.[0] ? <img src={p.images[0]} alt="" className="w-full h-full object-cover" /> : '👟'}
+                          {p.images?.[0] ? <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" /> : '👟'}
                         </div>
                         <div><p className="font-semibold text-xs text-surface-800 dark:text-surface-200">{p.name}</p></div>
                       </div>
