@@ -5,7 +5,7 @@ const SettingsContext = createContext(null);
 
 export function SettingsProvider({ children }) {
   const [settings, setSettings] = useState({
-    storeName: 'SoleMate POS', currencySymbol: '৳', taxRate: 5, taxName: 'VAT',
+    storeName: 'SoleMate POS', currencySymbol: '৳', taxRate: 0, taxName: 'VAT',
     currency: 'BDT', lowStockThreshold: 5, receiptFooter: 'Thank you for shopping!',
   });
 
