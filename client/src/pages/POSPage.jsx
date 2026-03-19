@@ -209,8 +209,8 @@ export default function POSPage() {
     doc.setFont('helvetica', 'normal');
     o.items.forEach(item => {
       doc.text(`${item.name} (${item.size}) × ${item.quantity}`, 5, y); y += 3.5;
-      doc.text(`  ${settings.currencySymbol}${item.price.toLocaleString()}`, 5, y);
-      doc.text(`${settings.currencySymbol}${item.total.toFixed(0)}`, 75, y, { align: 'right' }); y += 5;
+      doc.text(`  BDT ${item.price.toLocaleString()}`, 5, y);
+      doc.text(`BDT ${item.total.toFixed(0)}`, 75, y, { align: 'right' }); y += 5;
     });
     doc.line(5, y, 75, y); y += 3;
     const rows = [
