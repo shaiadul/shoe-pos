@@ -1,0 +1,134 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+:root {
+  --brand: #ec4899;
+  --brand-dark: #db2777;
+  --sidebar-width: 260px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: 'Inconsolata', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Light mode */
+:root {
+  --bg-primary: #f8f7f4;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f0ede6;
+  --text-primary: #1a1714;
+  --text-secondary: #6b6560;
+  --text-muted: #9a9490;
+  --border: #e8e3db;
+  --shadow: rgba(0,0,0,0.06);
+}
+
+/* Dark mode */
+.dark {
+  --bg-primary: #141210;
+  --bg-secondary: #1e1b18;
+  --bg-tertiary: #252220;
+  --text-primary: #f5f2ef;
+  --text-secondary: #a8a09a;
+  --text-muted: #6b6560;
+  --border: #2e2a26;
+  --shadow: rgba(0,0,0,0.3);
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-tertiary); }
+::-webkit-scrollbar-thumb { background: var(--brand); border-radius: 999px; }
+
+/* Custom components */
+@layer components {
+  .card {
+    @apply rounded-2xl border bg-white dark:bg-surface-900 dark:border-surface-800 shadow-sm;
+  }
+
+  .btn-primary {
+    @apply bg-brand-500 hover:bg-brand-600 text-white font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 text-sm active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply bg-surface-100 hover:bg-surface-200 dark:bg-surface-800 dark:hover:bg-surface-700 text-surface-700 dark:text-surface-300 font-medium px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 text-sm active:scale-95;
+  }
+
+  .btn-danger {
+    @apply bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 text-sm active:scale-95;
+  }
+
+  .input {
+    @apply w-full px-4 py-2.5 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-all text-sm;
+  }
+
+  .label {
+    @apply block text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-1.5;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-surface-600 dark:text-surface-400 hover:bg-brand-50 dark:hover:bg-surface-800 hover:text-brand-600 dark:hover:text-brand-400 transition-all duration-200 font-medium text-sm;
+  }
+
+  .sidebar-link.active {
+    @apply bg-brand-500 text-white dark:bg-brand-600 hover:bg-brand-600 dark:hover:bg-brand-500 hover:text-white dark:hover:text-white;
+  }
+
+  .stat-card {
+    @apply card p-5 flex flex-col gap-3;
+  }
+
+  .table-header {
+    @apply px-4 py-3 text-left text-xs font-bold text-surface-500 dark:text-surface-400 uppercase tracking-wider;
+  }
+
+  .table-cell {
+    @apply px-4 py-3.5 text-sm text-surface-700 dark:text-surface-300;
+  }
+
+  .table-row {
+    @apply border-b border-surface-100 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors;
+  }
+
+  .pos-product-card {
+    @apply card p-3 cursor-pointer hover:border-brand-400 hover:shadow-md transition-all duration-200 active:scale-[0.98];
+  }
+
+  .section-title {
+    @apply text-xl font-bold text-surface-900 dark:text-surface-50;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  body { background: white; color: black; }
+}
+
+.print-only { display: none; }
+
+/* Animations */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
