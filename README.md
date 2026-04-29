@@ -88,7 +88,7 @@ shoe-pos/
 └── client/                    # React.js Frontend
     ├── src/
     │   ├── api/
-    │   │   └── index.js       # Axios API client
+    │   │   └── index.js       # Axios API client fetch
     │   ├── components/
     │   │   ├── Layout/
     │   │   │   ├── Layout.jsx
