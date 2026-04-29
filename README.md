@@ -42,7 +42,6 @@ npm run dev
 | Role    | Email                    | Password    |
 |---------|--------------------------|-------------|
 | Admin   | admin@solemate.com       | admin123    |
-| Manager | manager@solemate.com     | manager123  |
 | Staff   | staff@solemate.com       | staff123    |
 
 ---
