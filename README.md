@@ -7,7 +7,7 @@ A production-ready, full-stack MERN Shoe POS with a modern, Shopify-inspired UI.
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js v18+
+- Node.js v18+ not alpin
 - MongoDB (local or Atlas)
 
 ### 1. Clone & Install
