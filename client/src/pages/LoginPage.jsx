@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
+import { HiOutlineShoppingBag, HiOutlineArchiveBox } from "react-icons/hi2";
 
 export default function LoginPage() {
   const [form, setForm] = useState({
@@ -54,15 +55,15 @@ export default function LoginPage() {
         <motion.div
           animate={{ y: [-8, 8, -8], rotate: [-3, 3, -3] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[140px] select-none"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[140px] select-none text-brand-500/20"
         >
-          👟
+          <HiOutlineShoppingBag />
         </motion.div>
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center text-xl shadow-lg shadow-brand-500/50">
-              👟
+            <div className="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center text-white text-2xl shadow-lg shadow-brand-500/30">
+              <HiOutlineArchiveBox />
             </div>
             <span className="font-extrabold text-white text-xl tracking-tight">
               SoleMate POS

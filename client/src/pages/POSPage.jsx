@@ -6,13 +6,32 @@ import { useAuth } from '../context/AuthContext';
 import { Modal, Spinner, SearchInput } from '../components/UI';
 import toast from 'react-hot-toast';
 import { jsPDF } from 'jspdf';
+import { 
+  HiOutlineSearch, 
+  HiOutlineUser, 
+  HiOutlineTag, 
+  HiOutlineTicket, 
+  HiOutlineCreditCard, 
+  HiOutlineBanknotes, 
+  HiOutlineDevicePhoneMobile, 
+  HiOutlineArrowsRightLeft,
+  HiOutlineTrash,
+  HiOutlinePlus,
+  HiOutlineMinus,
+  HiOutlineReceiptPercent,
+  HiOutlineSquares2X2, 
+  HiOutlineTableCells, 
+  HiOutlinePencilSquare, 
+  HiOutlineDocumentDuplicate, 
+  HiOutlineArchiveBox
+} from 'react-icons/hi2';
 
 const PAYMENT_METHODS = [
-  { id: 'cash', label: 'Cash', icon: '💵' },
-  { id: 'card', label: 'Card', icon: '💳' },
-  { id: 'mobile_banking', label: 'Mobile', icon: '📱' },
-  { id: 'due', label: 'Full Due', icon: '📋', needsCustomer: true },
-  { id: 'partial', label: 'Partial', icon: '🔀', needsCustomer: true },
+  { id: 'cash', label: 'Cash', icon: <HiOutlineBanknotes /> },
+  { id: 'card', label: 'Card', icon: <HiOutlineCreditCard /> },
+  { id: 'mobile_banking', label: 'Mobile', icon: <HiOutlineDevicePhoneMobile /> },
+  { id: 'due', label: 'Full Due', icon: <HiOutlineTicket />, needsCustomer: true },
+  { id: 'partial', label: 'Partial', icon: <HiOutlineArrowsRightLeft />, needsCustomer: true },
 ];
 
 export default function POSPage() {
@@ -28,6 +47,7 @@ export default function POSPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [viewMode, setViewMode] = useState('grid');
 
   // Customer
   const [customer, setCustomer] = useState(null);
@@ -120,7 +140,7 @@ export default function POSPage() {
         quantity: 1,
       }];
     });
-    toast.success(`${product.name} (${variant.size}) added`, { duration: 1200, icon: '👟' });
+    toast.success(`${product.name} (${variant.size}) added`, { duration: 1200 });
     setSizeModal(null);
   };
 
@@ -244,7 +264,18 @@ export default function POSPage() {
         {/* Filters */}
         <div className="p-3 border-b border-surface-100 dark:border-surface-800 flex gap-2 flex-wrap">
           <div className="flex-1 min-w-[180px]">
-            <SearchInput value={search} onChange={setSearch} placeholder="Search shoes, brand, SKU…" />
+            <SearchInput value={search} onChange={setSearch} placeholder="Search shoes, brand, SKU…" icon={<HiOutlineSearch />} />
+          </div>
+          <div className="ml-auto flex gap-1 border border-surface-200 dark:border-surface-700 rounded-xl p-0.5">
+          {[
+            { id: 'grid', icon: <HiOutlineSquares2X2 /> },
+            { id: 'table', icon: <HiOutlineTableCells /> }
+          ].map(m => (
+            <button key={m.id} onClick={() => setViewMode(m.id)}
+              className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all ${viewMode === m.id ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/20' : 'text-surface-400 hover:text-brand-500'}`}>
+              {m.icon}
+            </button>
+          ))}
           </div>
           <div className="flex gap-1.5 overflow-x-auto">
             <button onClick={() => setSelectedCategory('')}
@@ -284,10 +315,10 @@ export default function POSPage() {
                           <span className="text-[10px] font-black text-white bg-red-500 px-3 py-1 rounded-full shadow-lg">OUT OF STOCK</span>
                         </div>
                       )}
-                      <div className="aspect-square bg-surface-50 dark:bg-surface-800 rounded-2xl mb-3 flex items-center justify-center overflow-hidden border border-surface-100 dark:border-surface-800">
+                      <div className="aspect-square bg-surface-50 dark:bg-surface-800 rounded-2xl mb-3 flex items-center justify-center overflow-hidden border border-surface-100 dark:border-surface-800 group-hover:border-brand-200 transition-colors">
                         {product.images?.[0] ? (
-                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
-                        ) : <span className="text-5xl opacity-40">👟</span>}
+                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        ) : <HiOutlineArchiveBox className="text-4xl text-surface-200" />}
                       </div>
                       <p className="text-[12px] font-black text-surface-950 dark:text-white truncate tracking-tight">{product.name}</p>
                       <p className="text-[10px] font-bold text-surface-400 uppercase tracking-widest">{product.brand}</p>
@@ -299,6 +330,11 @@ export default function POSPage() {
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${product.totalStock <= 5 ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-500'}`}>
                           {product.totalStock}
                         </span>
+                      </div>
+                      <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={(e) => { e.stopPropagation(); openEdit(product); }} className="w-8 h-8 rounded-full bg-white dark:bg-surface-800 shadow-lg flex items-center justify-center text-surface-600 dark:text-surface-400 hover:text-brand-500 hover:scale-110 transition-all"><HiOutlinePencilSquare /></button>
+                        <button onClick={(e) => { e.stopPropagation(); duplicate(product); }} className="w-8 h-8 rounded-full bg-white dark:bg-surface-800 shadow-lg flex items-center justify-center text-surface-600 dark:text-surface-400 hover:text-blue-500 hover:scale-110 transition-all"><HiOutlineDocumentDuplicate /></button>
+                        <button onClick={(e) => { e.stopPropagation(); setDeleting(product._id); }} className="w-8 h-8 rounded-full bg-white dark:bg-surface-800 shadow-lg flex items-center justify-center text-surface-600 dark:text-surface-400 hover:text-red-500 hover:scale-110 transition-all"><HiOutlineTrash /></button>
                       </div>
                     </motion.div>
                   );
@@ -312,7 +348,10 @@ export default function POSPage() {
                 </div>
               )}
               {!loading && products.length === 0 && (
-                <div className="text-center py-20"><p className="text-5xl mb-3">👟</p><p className="text-surface-400">No products found</p></div>
+                <div className="text-center py-20">
+                  <HiOutlineArchiveBox className="text-5xl mx-auto mb-3 text-surface-200" />
+                  <p className="text-surface-400">No products found</p>
+                </div>
               )}
             </>
           )}
@@ -334,7 +373,11 @@ export default function POSPage() {
           <div className="flex items-center gap-2">
             <button onClick={() => setShowCustomerPanel(s => !s)}
               className={`text-xs font-medium flex items-center gap-1 transition-colors px-2 py-1 rounded-lg ${customer ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400' : 'text-surface-500 hover:text-brand-500'}`}>
-              {customer ? `👤 ${customer.name.split(' ')[0]}` : '+ Customer'}
+              {customer ? (
+                <span className="flex items-center gap-1"><HiOutlineUser /> {customer.name.split(' ')[0]}</span>
+              ) : (
+                <span className="flex items-center gap-1"><HiOutlinePlus /> Customer</span>
+              )}
               {customer?.dueBalance > 0 && (
                 <span className="text-[9px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1 py-0.5 rounded font-bold">
                   Due {fmt(customer.dueBalance)}
@@ -364,7 +407,7 @@ export default function POSPage() {
                         <p className="text-[10px] text-surface-400">{c.phone}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] text-purple-500 font-bold">✦ {c.loyaltyPoints} pts</p>
+                        <p className="text-[10px] text-purple-500 font-bold flex items-center gap-0.5 justify-end"><HiOutlineTag className="text-[9px]" /> {c.loyaltyPoints} pts</p>
                         {c.dueBalance > 0 && <p className="text-[10px] text-red-500 font-bold">Due: {fmt(c.dueBalance)}</p>}
                       </div>
                     </div>
@@ -394,7 +437,9 @@ export default function POSPage() {
               <motion.div key={item.key}
                 initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
                 className="flex gap-2.5 p-2.5 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800">
-                <div className="w-10 h-10 rounded-lg bg-surface-200 dark:bg-surface-700 flex items-center justify-center text-lg shrink-0">👟</div>
+                <div className="w-10 h-10 rounded-lg bg-surface-200 dark:bg-surface-700 flex items-center justify-center text-lg shrink-0 overflow-hidden">
+                  {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" /> : <HiOutlineArchiveBox className="text-surface-400" />}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-surface-800 dark:text-surface-200 truncate">{item.name}</p>
                   <p className="text-[10px] text-surface-400">{item.size} · {item.color}</p>
@@ -413,7 +458,7 @@ export default function POSPage() {
           </AnimatePresence>
           {cart.length === 0 && (
             <div className="text-center py-16">
-              <p className="text-4xl mb-3 opacity-20">🛒</p>
+              <HiOutlineShoppingBag className="text-4xl mx-auto mb-3 opacity-20" />
               <p className="text-xs text-surface-400">Cart is empty</p>
               <p className="text-[11px] text-surface-300 mt-1">Click products to add</p>
             </div>
@@ -466,7 +511,7 @@ export default function POSPage() {
                   <p className="font-bold text-surface-900 dark:text-white">{sizeModal.product.name}</p>
                   <p className="text-xs text-surface-400">{sizeModal.product.brand} · Select size & color</p>
                 </div>
-                <button onClick={() => setSizeModal(null)} className="text-surface-400 hover:text-surface-600 text-xl">×</button>
+                <button onClick={() => setSizeModal(null)} className="w-8 h-8 rounded-full hover:bg-surface-100 dark:hover:bg-surface-800 flex items-center justify-center text-surface-400 hover:text-surface-600 transition-colors">✕</button>
               </div>
               <div className="p-4 max-h-80 overflow-y-auto">
                 {Object.entries(sizeModal.sizes).map(([size, variants]) => (

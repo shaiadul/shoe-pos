@@ -3,6 +3,18 @@ import { motion } from 'framer-motion';
 import { supplierAPI, productAPI } from '../api';
 import { Modal, Badge, SearchInput, Pagination, Empty, LoadingPage, ConfirmDialog } from '../components/UI';
 import toast from 'react-hot-toast';
+import { 
+  HiOutlineTruck, 
+  HiOutlinePhone, 
+  HiOutlineEnvelope, 
+  HiOutlineMapPin, 
+  HiOutlineMagnifyingGlass,
+  HiOutlinePlus,
+  HiOutlinePencilSquare,
+  HiOutlineTrash,
+  HiOutlineBuildingOffice2,
+  HiOutlineArchiveBox
+} from 'react-icons/hi2';
 import { useSettings } from '../context/SettingsContext';
 
 const empty = () => ({ name: '', company: '', email: '', phone: '', address: '', city: '', country: 'Bangladesh', brands: [], notes: '' });
@@ -71,7 +83,14 @@ export default function SuppliersPage() {
         <button onClick={() => { setEditing(null); setForm(empty()); setShowForm(true); }} className="btn-primary">+ Add Supplier</button>
       </div>
 
-      <div className="w-64"><SearchInput value={search} onChange={setSearch} placeholder="Search suppliers…" /></div>
+      <div className="w-full md:w-72">
+        <SearchInput 
+          value={search} 
+          onChange={setSearch} 
+          placeholder="Search by name, company…" 
+          icon={<HiOutlineMagnifyingGlass />}
+        />
+      </div>
 
       <div className="card overflow-hidden">
         {loading ? <LoadingPage /> : (
@@ -129,14 +148,17 @@ export default function SuppliersPage() {
       <Modal open={!!viewSupplier} onClose={() => setViewSupplier(null)} title="Supplier Details" size="md">
         {viewSupplier && (
           <div className="p-5 space-y-4">
-            <div className="flex items-center gap-4 p-4 bg-surface-50 dark:bg-surface-800 rounded-2xl">
-              <div className="w-14 h-14 rounded-2xl bg-blue-500 flex items-center justify-center text-2xl font-bold text-white">
-                {viewSupplier.name.charAt(0)}
+            <div className="flex items-center gap-4 p-5 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-[2rem] shadow-sm">
+              <div className="w-16 h-16 rounded-2xl bg-blue-500 flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-blue-500/20">
+                <HiOutlineTruck />
               </div>
               <div>
-                <p className="font-extrabold text-surface-900 dark:text-white text-lg">{viewSupplier.name}</p>
-                <p className="text-sm text-surface-500">{viewSupplier.company}</p>
-                <p className="text-xs text-surface-400 mt-0.5">{viewSupplier.phone} · {viewSupplier.city}, {viewSupplier.country}</p>
+                <p className="font-black text-surface-900 dark:text-white text-xl tracking-tight">{viewSupplier.name}</p>
+                <p className="text-sm font-bold text-blue-600 dark:text-blue-400 mt-0.5">{viewSupplier.company}</p>
+                <div className="flex items-center gap-3 mt-2 text-xs text-surface-400 font-medium">
+                   <span className="flex items-center gap-1"><HiOutlinePhone className="text-blue-500" /> {viewSupplier.phone}</span>
+                   <span className="flex items-center gap-1"><HiOutlineMapPin className="text-blue-500" /> {viewSupplier.city}</span>
+                </div>
               </div>
             </div>
             <div>
@@ -149,12 +171,14 @@ export default function SuppliersPage() {
               <p className="label">Products ({supplierProducts.length})</p>
               <div className="space-y-1.5 max-h-40 overflow-y-auto">
                 {supplierProducts.map(p => (
-                  <div key={p._id} className="flex items-center justify-between p-2.5 bg-surface-50 dark:bg-surface-800 rounded-xl text-xs">
-                    <div className="flex items-center gap-2">
-                      <span>👟</span>
-                      <span className="font-semibold text-surface-800 dark:text-surface-200">{p.name}</span>
+                  <div key={p._id} className="flex items-center justify-between p-3 bg-surface-50 dark:bg-surface-800 rounded-xl text-xs border border-transparent hover:border-blue-100 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-surface-100 dark:bg-surface-700 flex items-center justify-center text-lg text-surface-300 overflow-hidden">
+                        {p.images?.[0] ? <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" /> : <HiOutlineArchiveBox />}
+                      </div>
+                      <span className="font-bold text-surface-800 dark:text-surface-200">{p.name}</span>
                     </div>
-                    <span className="font-bold text-brand-500">{fmt(p.price)}</span>
+                    <span className="font-black text-brand-500">{fmt(p.price)}</span>
                   </div>
                 ))}
                 {supplierProducts.length === 0 && <p className="text-xs text-surface-400 py-2 text-center">No products linked</p>}

@@ -4,16 +4,28 @@ import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { tr } from 'date-fns/locale';
 
+import { 
+  HiOutlineHome, 
+  HiOutlineShoppingCart, 
+  HiOutlineCube, 
+  HiOutlineClipboardList, 
+  HiOutlineUsers, 
+  HiOutlineTruck, 
+  HiOutlineChartBar, 
+  HiOutlineUserGroup, 
+  HiOutlineCog6Tooth 
+} from 'react-icons/hi2';
+
 const navItems = [
-  { to: '/dashboard', icon: '🏠', label: 'Dashboard' },
-  { to: '/pos', icon: '🛒', label: 'Point of Sale', highlight: true },
-  { to: '/products', icon: '👟', label: 'Inventory' },
-  { to: '/orders', icon: '🧾', label: 'Sales History' },
-  { to: '/customers', icon: '👥', label: 'Customers' },
-  { to: '/suppliers', icon: '🚚', label: 'Suppliers' },
-  { to: '/reports', icon: '📈', label: 'Analytics' },
-  { to: '/users', icon: '🛡️', label: 'Staff Management' },
-  { to: '/settings', icon: '⚙️', label: 'Settings' },
+  { to: '/dashboard', icon: <HiOutlineHome />, label: 'Dashboard' },
+  { to: '/pos', icon: <HiOutlineShoppingCart />, label: 'Point of Sale', highlight: true },
+  { to: '/products', icon: <HiOutlineCube />, label: 'Inventory' },
+  { to: '/orders', icon: <HiOutlineClipboardList />, label: 'Sales History' },
+  { to: '/customers', icon: <HiOutlineUsers />, label: 'Customers' },
+  { to: '/suppliers', icon: <HiOutlineTruck />, label: 'Suppliers' },
+  { to: '/reports', icon: <HiOutlineChartBar />, label: 'Analytics' },
+  { to: '/users', icon: <HiOutlineUserGroup />, label: 'Staff Management' },
+  { to: '/settings', icon: <HiOutlineCog6Tooth />, label: 'Settings' },
 ];
 
 export default function Sidebar({ open, onClose }) {
@@ -43,7 +55,9 @@ export default function Sidebar({ open, onClose }) {
         {/* Logo */}
         <div className="flex items-center gap-3 px-6 py-8 border-b border-surface-100 dark:border-surface-800">
           <div className="w-11 h-11 rounded-2xl bg-brand-500 flex items-center justify-center text-2xl shadow-xl shadow-brand-500/40">
-            👟
+          <div className="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center text-white text-xl shadow-lg shadow-brand-500/20">
+            <HiOutlineShoppingBag />
+          </div>
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-black text-lg text-surface-950 dark:text-white leading-none tracking-tight truncate">{settings.storeName}</p>
