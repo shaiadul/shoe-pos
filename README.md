@@ -225,3 +225,7 @@ sudo certbot --nginx -d yourdomain.com
 - **Dark/Light Mode** — System-aware, persistent preference
 - **Responsive** — Desktop & tablet optimized POS layout
 - **Socket.io** — Real-time order and stock updates
+
+## Pending Task
+- Setting not working
+- PDF download not working
