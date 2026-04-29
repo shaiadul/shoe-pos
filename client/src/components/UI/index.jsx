@@ -207,3 +207,26 @@ export function Select({ value, onChange, options, placeholder, className = '', 
     </div>
   );
 }
+
+/* ── Skeleton ───────────────────────────────────────── */
+export function Skeleton({ className = '' }) {
+  return <div className={`skeleton rounded-xl ${className}`} />;
+}
+
+export function SkeletonGrid({ count = 8, className = '' }) {
+  return (
+    <div className={`grid gap-4 ${className}`}>
+      {[...Array(count)].map((_, i) => (
+        <div key={i} className="card p-3 space-y-3 border-none shadow-sm">
+          <Skeleton className="aspect-square w-full" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-3 w-1/2" />
+          <div className="pt-2 border-t border-surface-50 dark:border-surface-800 flex justify-between">
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-5 w-8 rounded-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

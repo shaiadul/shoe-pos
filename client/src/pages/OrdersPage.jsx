@@ -7,6 +7,7 @@ import { Modal, Badge, SearchInput, Pagination, Empty, LoadingPage, Select } fro
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 import { 
   HiOutlineCreditCard, 
@@ -57,28 +58,85 @@ export default function OrdersPage() {
   useEffect(() => { load(1); }, [search, status]);
 
   const printReceipt = (o) => {
-    const doc = new jsPDF({ format: [80, 200], unit: 'mm' });
-    let y = 8;
-    doc.setFontSize(11); doc.setFont('helvetica', 'bold');
-    doc.text(settings.storeName, 40, y, { align: 'center' }); y += 5;
+    const doc = new jsPDF({ format: [80, 220], unit: 'mm' });
+    let y = 10;
+
+    // Header
+    doc.setFontSize(14); doc.setFont('helvetica', 'bold');
+    doc.text(settings.storeName.toUpperCase(), 40, y, { align: 'center' });
+    y += 5;
     doc.setFontSize(7); doc.setFont('helvetica', 'normal');
-    if (settings.storeAddress) { doc.text(settings.storeAddress, 40, y, { align: 'center' }); y += 4; }
+    const headerInfo = [settings.storeAddress, settings.storePhone, settings.storeEmail].filter(Boolean);
+    headerInfo.forEach(text => { doc.text(text, 40, y, { align: 'center' }); y += 3.5; });
+    
+    y += 2;
+    doc.setDrawColor(230); doc.line(5, y, 75, y);
+    y += 5;
+
+    // Order Info
     doc.setFontSize(7.5); doc.setFont('helvetica', 'bold');
-    doc.text(`#${o.orderNumber}`, 5, y);
-    doc.text(format(new Date(o.createdAt), 'dd/MM/yy HH:mm'), 75, y, { align: 'right' }); y += 4;
-    doc.text(`Customer: ${o.customerName}`, 5, y); y += 4;
-    doc.line(5, y, 75, y); y += 4;
-    doc.setFont('helvetica', 'normal');
-    o.items.forEach(item => {
-      doc.text(`${item.name} (${item.size}) x${item.quantity}`, 5, y); y += 3.5;
-      doc.text(`  BDT ${item.price}`, 5, y);
-      doc.text(`BDT ${item.total.toFixed(0)}`, 75, y, { align: 'right' }); y += 5;
+    doc.text('INVOICE:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(`#${o.orderNumber}`, 20, y);
+    doc.text(format(new Date(o.createdAt), 'dd/MM/yyyy HH:mm'), 75, y, { align: 'right' });
+    y += 4;
+    doc.setFont('helvetica', 'bold'); doc.text('CUSTOMER:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(o.customerName, 22, y);
+    y += 4;
+    doc.setFont('helvetica', 'bold'); doc.text('CASHIER:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(o.cashierName || 'System', 20, y);
+    y += 6;
+
+    // Items Table
+    autoTable(doc, {
+      startY: y,
+      head: [['Item', 'Qty', 'Price', 'Total']],
+      body: o.items.map(i => [
+        `${i.name}\n${i.brand || ''} - ${i.size}`,
+        i.quantity,
+        i.price.toLocaleString(),
+        i.total.toFixed(0)
+      ]),
+      theme: 'plain',
+      styles: { fontSize: 7, cellPadding: 1, overflow: 'linebreak' },
+      headStyles: { fontStyle: 'bold', borderBottom: 0.1, borderBottomColor: 200 },
+      columnStyles: {
+        0: { cellWidth: 35 },
+        1: { halign: 'center' },
+        2: { halign: 'right' },
+        3: { halign: 'right', fontStyle: 'bold' }
+      },
+      margin: { left: 5, right: 5 }
     });
-    doc.line(5, y, 75, y); y += 3;
-    doc.setFont('helvetica', 'bold');
-    doc.text('TOTAL', 5, y); doc.text(fmt(o.total), 75, y, { align: 'right' }); y += 5;
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
-    doc.text(settings.receiptFooter || 'Thank you!', 40, y, { align: 'center' });
+
+    y = doc.lastAutoTable.finalY + 5;
+
+    // Summary
+    const summaryX = 45;
+    const valueX = 75;
+    const rowH = 4;
+    
+    doc.setFontSize(7.5);
+    const rows = [
+      ['Subtotal', fmt(o.subtotal)],
+      o.discountAmount > 0 ? ['Discount', `-${fmt(o.discountAmount)}`] : null,
+      o.taxAmount > 0 ? [`${settings.taxName} (${settings.taxRate}%)`, fmt(o.taxAmount)] : null,
+      ['TOTAL', fmt(o.total), true],
+      ['Paid', fmt(o.paidAmount)],
+      o.dueAmount > 0 ? ['DUE BALANCE', fmt(o.dueAmount), true, [220, 38, 38]] : null,
+    ].filter(Boolean);
+
+    rows.forEach(([label, value, isBold, color]) => {
+      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+      if (color) doc.setTextColor(...color);
+      doc.text(label, summaryX, y);
+      doc.text(value, valueX, y, { align: 'right' });
+      doc.setTextColor(0);
+      y += rowH;
+    });
+
+    y += 5;
+    doc.setDrawColor(230); doc.line(20, y, 60, y);
+    y += 5;
+    doc.setFontSize(7); doc.setFont('helvetica', 'italic');
+    doc.text(settings.receiptFooter || 'Thank you for your business!', 40, y, { align: 'center' });
+
     doc.save(`receipt-${o.orderNumber}.pdf`);
   };
 

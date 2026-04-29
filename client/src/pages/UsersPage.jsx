@@ -1,10 +1,21 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { authAPI } from '../api';
-import { Modal, Badge, Empty, LoadingPage, ConfirmDialog } from '../components/UI';
+import { Modal, Badge, Empty, LoadingPage, ConfirmDialog, SearchInput, Select } from '../components/UI';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
+import { 
+  HiOutlineUser, 
+  HiOutlineEnvelope, 
+  HiOutlinePhone, 
+  HiOutlineBuildingStorefront,
+  HiOutlineShieldCheck,
+  HiOutlineTrash,
+  HiOutlinePencilSquare,
+  HiOutlineUsers,
+  HiOutlineLockClosed
+} from 'react-icons/hi2';
 
 const empty = () => ({ name: '', email: '', password: '', role: 'staff', phone: '', store: 'Main Store' });
 const roleColors = { admin: 'pink', staff: 'green' };
@@ -18,6 +29,7 @@ export default function UsersPage() {
   const [form, setForm] = useState(empty());
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
@@ -65,14 +77,13 @@ export default function UsersPage() {
       {loading ? <LoadingPage /> : (
         <>
           <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="input w-64"
-            />
-            <button onClick={() => { setEditing(null); setForm(empty()); setShowForm(true); }} className="btn-primary">+ Add User</button>
+            <div className="w-full md:w-64">
+              <SearchInput
+                placeholder="Search by name or email..."
+                value={searchTerm}
+                onChange={setSearchTerm}
+              />
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase())).map((u, i) => (
@@ -125,7 +136,7 @@ export default function UsersPage() {
         </>
       )}
 
-      {!loading && users.length === 0 && <Empty icon="👥" title="No users yet" />}
+      {!loading && users.length === 0 && <Empty icon={<HiOutlineUsers />} title="No users yet" subtitle="Start building your team" />}
 
       <Modal open={showForm} onClose={() => setShowForm(false)} title={editing ? 'Edit User' : 'Add User'} size="sm">
         <form onSubmit={handleSave} className="p-5 space-y-4">
@@ -148,10 +159,15 @@ export default function UsersPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Role *</label>
-              <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} className="input">
-                  <option value="staff">Staff</option>
-                  <option value="admin">Admin</option>
-              </select>
+              <Select 
+                value={form.role} 
+                onChange={val => setForm(f => ({ ...f, role: val }))}
+                options={[
+                  { value: 'staff', label: 'Staff' },
+                  { value: 'admin', label: 'Admin' }
+                ]}
+                icon={<HiOutlineShieldCheck />}
+              />
             </div>
             <div>
               <label className="label">Phone</label>

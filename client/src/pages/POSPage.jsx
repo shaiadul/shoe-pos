@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { productAPI, customerAPI, orderAPI } from '../api';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
-import { Modal, Spinner, SearchInput } from '../components/UI';
+import { Modal, Spinner, SearchInput, SkeletonGrid } from '../components/UI';
 import toast from 'react-hot-toast';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { 
-  HiOutlineSearch, 
+  HiOutlineMagnifyingGlass, 
   HiOutlineUser, 
   HiOutlineTag, 
   HiOutlineTicket, 
@@ -23,7 +24,8 @@ import {
   HiOutlineTableCells, 
   HiOutlinePencilSquare, 
   HiOutlineDocumentDuplicate, 
-  HiOutlineArchiveBox
+  HiOutlineArchiveBox,
+  HiOutlineShoppingBag
 } from 'react-icons/hi2';
 
 const PAYMENT_METHODS = [
@@ -47,7 +49,6 @@ export default function POSPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [viewMode, setViewMode] = useState('grid');
 
   // Customer
   const [customer, setCustomer] = useState(null);
@@ -158,18 +159,22 @@ export default function POSPage() {
   const clearCart = () => { setCart([]); setCustomer(null); setOrderDiscount(0); };
 
   // Calculations
-  const subtotal = cart.reduce((s, i) => s + i.price * i.quantity * (1 - i.discount / 100), 0);
-  const discountAmt = subtotal * orderDiscount / 100;
-  const afterDiscount = subtotal - discountAmt;
-  const taxAmt = afterDiscount * (settings.taxRate || 0) / 100;
-  const total = afterDiscount + taxAmt;
-  const cashChange = paymentMethod === 'cash' ? (parseFloat(cashPaid) || 0) - total : 0;
-  const partialDue = paymentMethod === 'partial' ? total - (parseFloat(partialPaid) || 0) : 0;
-  const effectivePaid = paymentMethod === 'due' ? 0 :
-                        paymentMethod === 'partial' ? parseFloat(partialPaid) || 0 :
-                        paymentMethod === 'cash' ? Math.min(parseFloat(cashPaid) || total, total) :
-                        total;
-  const dueAmount = Math.max(0, total - effectivePaid);
+  const { subtotal, discountAmt, afterDiscount, taxAmt, total, cashChange, partialDue, effectivePaid, dueAmount } = useMemo(() => {
+    const sub = cart.reduce((s, i) => s + i.price * i.quantity * (1 - i.discount / 100), 0);
+    const disc = sub * orderDiscount / 100;
+    const after = sub - disc;
+    const tax = after * (settings.taxRate || 0) / 100;
+    const tot = after + tax;
+    const change = paymentMethod === 'cash' ? (parseFloat(cashPaid) || 0) - tot : 0;
+    const pDue = paymentMethod === 'partial' ? tot - (parseFloat(partialPaid) || 0) : 0;
+    const effPaid = paymentMethod === 'due' ? 0 :
+                          paymentMethod === 'partial' ? parseFloat(partialPaid) || 0 :
+                          paymentMethod === 'cash' ? Math.min(parseFloat(cashPaid) || tot, tot) :
+                          tot;
+    const due = Math.max(0, tot - effPaid);
+    
+    return { subtotal: sub, discountAmt: disc, afterDiscount: after, taxAmt: tax, total: tot, cashChange: change, partialDue: pDue, effectivePaid: effPaid, dueAmount: due };
+  }, [cart, orderDiscount, settings.taxRate, paymentMethod, cashPaid, partialPaid]);
 
   // Validate checkout
   const needsCustomer = ['due', 'partial'].includes(paymentMethod);
@@ -215,45 +220,92 @@ export default function POSPage() {
   const printReceipt = () => {
     const doc = new jsPDF({ format: [80, 220], unit: 'mm' });
     const o = completedOrder;
-    let y = 8;
-    doc.setFontSize(11); doc.setFont('helvetica', 'bold');
-    doc.text(settings.storeName, 40, y, { align: 'center' }); y += 5;
+    let y = 10;
+
+    // Header
+    doc.setFontSize(14); doc.setFont('helvetica', 'bold');
+    doc.text(settings.storeName.toUpperCase(), 40, y, { align: 'center' });
+    y += 5;
     doc.setFontSize(7); doc.setFont('helvetica', 'normal');
-    if (settings.storeAddress) { doc.text(settings.storeAddress, 40, y, { align: 'center' }); y += 4; }
-    if (settings.storePhone) { doc.text(settings.storePhone, 40, y, { align: 'center' }); y += 4; }
+    const headerInfo = [settings.storeAddress, settings.storePhone, settings.storeEmail].filter(Boolean);
+    headerInfo.forEach(text => { doc.text(text, 40, y, { align: 'center' }); y += 3.5; });
+    
+    y += 2;
+    doc.setDrawColor(230); doc.line(5, y, 75, y);
+    y += 5;
+
+    // Order Info
     doc.setFontSize(7.5); doc.setFont('helvetica', 'bold');
-    doc.text(`#${o.orderNumber}`, 5, y); doc.text(new Date(o.createdAt).toLocaleString(), 75, y, { align: 'right' }); y += 4;
-    doc.text(`Customer: ${o.customerName}`, 5, y); y += 4;
-    doc.text(`Cashier: ${o.cashierName}`, 5, y); y += 4;
-    doc.line(5, y, 75, y); y += 4;
-    doc.setFont('helvetica', 'normal');
-    o.items.forEach(item => {
-      doc.text(`${item.name} (${item.size}) × ${item.quantity}`, 5, y); y += 3.5;
-      doc.text(`  BDT ${item.price.toLocaleString()}`, 5, y);
-      doc.text(`BDT ${item.total.toFixed(0)}`, 75, y, { align: 'right' }); y += 5;
+    doc.text('INVOICE:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(`#${o.orderNumber}`, 20, y);
+    doc.text(format(new Date(o.createdAt), 'dd/MM/yyyy HH:mm'), 75, y, { align: 'right' });
+    y += 4;
+    doc.setFont('helvetica', 'bold'); doc.text('CUSTOMER:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(o.customerName, 22, y);
+    y += 4;
+    doc.setFont('helvetica', 'bold'); doc.text('CASHIER:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(o.cashierName, 20, y);
+    y += 6;
+
+    // Items Table
+    autoTable(doc, {
+      startY: y,
+      head: [['Item', 'Qty', 'Price', 'Total']],
+      body: o.items.map(i => [
+        `${i.name}\n${i.brand} - ${i.size}`,
+        i.quantity,
+        i.price.toLocaleString(),
+        i.total.toFixed(0)
+      ]),
+      theme: 'plain',
+      styles: { fontSize: 7, cellPadding: 1, overflow: 'linebreak' },
+      headStyles: { fontStyle: 'bold', borderBottom: 0.1, borderBottomColor: 200 },
+      columnStyles: {
+        0: { cellWidth: 35 },
+        1: { halign: 'center' },
+        2: { halign: 'right' },
+        3: { halign: 'right', fontStyle: 'bold' }
+      },
+      margin: { left: 5, right: 5 }
     });
-    doc.line(5, y, 75, y); y += 3;
+
+    y = doc.lastAutoTable.finalY + 5;
+
+    // Summary
+    const summaryX = 45;
+    const valueX = 75;
+    const rowH = 4;
+    
+    doc.setFontSize(7.5);
     const rows = [
       ['Subtotal', fmt(o.subtotal)],
       o.discountAmount > 0 ? ['Discount', `-${fmt(o.discountAmount)}`] : null,
       o.taxAmount > 0 ? [`${settings.taxName} (${settings.taxRate}%)`, fmt(o.taxAmount)] : null,
-      ['TOTAL', fmt(o.total)],
+      ['TOTAL', fmt(o.total), true],
       ['Paid', fmt(o.paidAmount)],
-      o.dueAmount > 0 ? ['DUE BALANCE', fmt(o.dueAmount)] : null,
+      o.dueAmount > 0 ? ['DUE BALANCE', fmt(o.dueAmount), true, [220, 38, 38]] : null,
     ].filter(Boolean);
-    rows.forEach(([label, value]) => {
-      doc.setFont('helvetica', ['TOTAL','DUE BALANCE'].includes(label) ? 'bold' : 'normal');
-      doc.setFontSize(['TOTAL','DUE BALANCE'].includes(label) ? 9 : 7.5);
-      if (label === 'DUE BALANCE') doc.setTextColor(220, 38, 38);
-      doc.text(label, 5, y); doc.text(value, 75, y, { align: 'right' }); y += 4;
-      doc.setTextColor(0, 0, 0);
+
+    rows.forEach(([label, value, isBold, color]) => {
+      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+      if (color) doc.setTextColor(...color);
+      doc.text(label, summaryX, y);
+      doc.text(value, valueX, y, { align: 'right' });
+      doc.setTextColor(0);
+      y += rowH;
     });
+
     if (o.paymentDetails?.change > 0) {
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
-      doc.text(`Change: ${fmt(o.paymentDetails.change)}`, 5, y); y += 4;
+      y += 1;
+      doc.setFont('helvetica', 'normal');
+      doc.text('Change Given', summaryX, y);
+      doc.text(fmt(o.paymentDetails.change), valueX, y, { align: 'right' });
+      y += 5;
     }
-    doc.line(5, y, 75, y); y += 4;
-    doc.setFontSize(7); doc.text(settings.receiptFooter || 'Thank you!', 40, y, { align: 'center' });
+
+    y += 5;
+    doc.setDrawColor(230); doc.line(20, y, 60, y);
+    y += 5;
+    doc.setFontSize(7); doc.setFont('helvetica', 'italic');
+    doc.text(settings.receiptFooter || 'Thank you for your business!', 40, y, { align: 'center' });
+
     doc.save(`receipt-${o.orderNumber}.pdf`);
   };
 
@@ -264,18 +316,7 @@ export default function POSPage() {
         {/* Filters */}
         <div className="p-3 border-b border-surface-100 dark:border-surface-800 flex gap-2 flex-wrap">
           <div className="flex-1 min-w-[180px]">
-            <SearchInput value={search} onChange={setSearch} placeholder="Search shoes, brand, SKU…" icon={<HiOutlineSearch />} />
-          </div>
-          <div className="ml-auto flex gap-1 border border-surface-200 dark:border-surface-700 rounded-xl p-0.5">
-          {[
-            { id: 'grid', icon: <HiOutlineSquares2X2 /> },
-            { id: 'table', icon: <HiOutlineTableCells /> }
-          ].map(m => (
-            <button key={m.id} onClick={() => setViewMode(m.id)}
-              className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all ${viewMode === m.id ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/20' : 'text-surface-400 hover:text-brand-500'}`}>
-              {m.icon}
-            </button>
-          ))}
+            <SearchInput value={search} onChange={setSearch} placeholder="Search shoes, brand, SKU…" icon={<HiOutlineMagnifyingGlass />} />
           </div>
           <div className="flex gap-1.5 overflow-x-auto">
             <button onClick={() => setSelectedCategory('')}
@@ -294,7 +335,7 @@ export default function POSPage() {
         {/* Products grid */}
         <div className="flex-1 overflow-y-auto p-3">
           {loading ? (
-            <div className="flex justify-center py-20"><Spinner /></div>
+            <SkeletonGrid count={12} className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" />
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
@@ -304,11 +345,11 @@ export default function POSPage() {
                   return (
                     <motion.div key={product._id}
                       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                      whileHover={{ scale: 1.03 }}
-                      className={`pos-product-card relative bg-white dark:bg-surface-900 border-none shadow-[0_4px_20px_rgb(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgb(0,0,0,0.2)] ${!hasStock ? 'opacity-50' : ''}`}
+                      whileHover={{ y: -5 }}
+                      className={`pos-product-card group relative bg-white dark:bg-surface-900 border-none shadow-[0_4px_20px_rgb(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgb(0,0,0,0.2)] ${!hasStock ? 'opacity-50' : ''}`}
                       onClick={() => hasStock && openSizeModal(product)}>
                       {product.discount > 0 && (
-                        <div className="absolute top-2 left-2 z-10 bg-brand-500 text-white text-[10px] font-black px-2 py-0.5 rounded-lg shadow-lg">-{product.discount}%</div>
+                        <div className="absolute top-3 left-3 z-10 bg-brand-500 text-white text-[10px] font-black px-2 py-0.5 rounded-lg shadow-lg">-{product.discount}%</div>
                       )}
                       {!hasStock && (
                         <div className="absolute inset-0 flex items-center justify-center bg-surface-900/60 rounded-2xl z-10 backdrop-blur-[2px]">
