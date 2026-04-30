@@ -38,7 +38,7 @@ exports.getOrder = async (req, res, next) => {
 
 exports.createOrder = async (req, res, next) => {
   try {
-    const { items, customer, customerName, paymentMethod, paymentDetails, subtotal, discountAmount, taxAmount, total, paidAmount, notes } = req.body;
+    const { items, customer, customerName, paymentMethod, paymentDetails, subtotal, discountAmount, taxAmount, taxRate, taxName, total, paidAmount, notes } = req.body;
 
     // Calculate due
     const paid = parseFloat(paidAmount) || (paymentMethod === 'due' ? 0 : total);
@@ -63,7 +63,7 @@ exports.createOrder = async (req, res, next) => {
 
     const order = await Order.create({
       items, customer, customerName: customerName || 'Walk-in Customer',
-      paymentMethod, paymentDetails, subtotal, discountAmount, taxAmount, total,
+      paymentMethod, paymentDetails, subtotal, discountAmount, taxAmount, taxRate, taxName, total,
       paidAmount: paid, dueAmount: due, notes,
       cashier: req.user._id, cashierName: req.user.name, store: req.user.store || 'Main Store',
     });

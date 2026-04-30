@@ -21,6 +21,8 @@ const orderSchema = new mongoose.Schema({
   subtotal: { type: Number, required: true },
   discountAmount: { type: Number, default: 0 },
   taxAmount: { type: Number, default: 0 },
+  taxRate: { type: Number, default: 0 },
+  taxName: { type: String, default: 'VAT' },
   total: { type: Number, required: true },
   paidAmount: { type: Number, default: 0 },      // how much was actually paid now
   dueAmount: { type: Number, default: 0 },        // how much is owed (total - paidAmount)

@@ -60,27 +60,41 @@ export default function OrdersPage() {
   const printReceipt = (o) => {
     const doc = new jsPDF({ format: [80, 220], unit: 'mm' });
     let y = 10;
+    
+    const pdfFmt = (amount) => `BDT ${Number(amount).toLocaleString('en-BD', { minimumFractionDigits: 0 })}`;
+    
+    const drawDashedLine = (yPos) => {
+      doc.setDrawColor(200);
+      doc.setLineWidth(0.5);
+      doc.setLineDashPattern([2, 2], 0);
+      doc.line(5, yPos, 75, yPos);
+      doc.setLineDashPattern([], 0); // reset
+    };
 
     // Header
-    doc.setFontSize(14); doc.setFont('helvetica', 'bold');
-    doc.text(settings.storeName.toUpperCase(), 40, y, { align: 'center' });
+    doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+    doc.text((settings.storeName || 'SoleMate POS').toUpperCase(), 40, y, { align: 'center' });
     y += 5;
-    doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal');
     const headerInfo = [settings.storeAddress, settings.storePhone, settings.storeEmail].filter(Boolean);
-    headerInfo.forEach(text => { doc.text(text, 40, y, { align: 'center' }); y += 3.5; });
+    headerInfo.forEach(text => { 
+      const lines = doc.splitTextToSize(text, 70);
+      doc.text(lines, 40, y, { align: 'center' }); 
+      y += 4 * lines.length; 
+    });
     
-    y += 2;
-    doc.setDrawColor(230); doc.line(5, y, 75, y);
+    y += 1;
+    drawDashedLine(y);
     y += 5;
 
     // Order Info
-    doc.setFontSize(7.5); doc.setFont('helvetica', 'bold');
-    doc.text('INVOICE:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(`#${o.orderNumber}`, 20, y);
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(`#${o.orderNumber}`, 22, y);
     doc.text(format(new Date(o.createdAt), 'dd/MM/yyyy HH:mm'), 75, y, { align: 'right' });
     y += 4;
-    doc.setFont('helvetica', 'bold'); doc.text('CUSTOMER:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(o.customerName, 22, y);
+    doc.setFont('helvetica', 'bold'); doc.text('CUSTOMER:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(o.customerName, 26, y);
     y += 4;
-    doc.setFont('helvetica', 'bold'); doc.text('CASHIER:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(o.cashierName || 'System', 20, y);
+    doc.setFont('helvetica', 'bold'); doc.text('CASHIER:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(o.cashierName || 'System', 22, y);
     y += 6;
 
     // Items Table
@@ -88,38 +102,40 @@ export default function OrdersPage() {
       startY: y,
       head: [['Item', 'Qty', 'Price', 'Total']],
       body: o.items.map(i => [
-        `${i.name}\n${i.brand || ''} - ${i.size}`,
+        `${i.name}\n${i.brand ? i.brand + ' - ' : ''}${i.size}`,
         i.quantity,
         i.price.toLocaleString(),
         i.total.toFixed(0)
       ]),
       theme: 'plain',
-      styles: { fontSize: 7, cellPadding: 1, overflow: 'linebreak' },
-      headStyles: { fontStyle: 'bold', borderBottom: 0.1, borderBottomColor: 200 },
+      styles: { fontSize: 8, cellPadding: 1, overflow: 'linebreak', font: 'helvetica' },
+      headStyles: { fontStyle: 'bold', borderBottomWidth: 0.5, borderBottomColor: 200 },
       columnStyles: {
-        0: { cellWidth: 35 },
-        1: { halign: 'center' },
-        2: { halign: 'right' },
-        3: { halign: 'right', fontStyle: 'bold' }
+        0: { cellWidth: 34 },
+        1: { halign: 'center', cellWidth: 10 },
+        2: { halign: 'right', cellWidth: 15 },
+        3: { halign: 'right', fontStyle: 'bold', cellWidth: 15 }
       },
       margin: { left: 5, right: 5 }
     });
 
-    y = doc.lastAutoTable.finalY + 5;
+    y = doc.lastAutoTable.finalY + 4;
+    drawDashedLine(y);
+    y += 5;
 
     // Summary
-    const summaryX = 45;
+    const summaryX = 40;
     const valueX = 75;
-    const rowH = 4;
+    const rowH = 4.5;
     
-    doc.setFontSize(7.5);
+    doc.setFontSize(8);
     const rows = [
-      ['Subtotal', fmt(o.subtotal)],
-      o.discountAmount > 0 ? ['Discount', `-${fmt(o.discountAmount)}`] : null,
-      o.taxAmount > 0 ? [`${settings.taxName} (${settings.taxRate}%)`, fmt(o.taxAmount)] : null,
-      ['TOTAL', fmt(o.total), true],
-      ['Paid', fmt(o.paidAmount)],
-      o.dueAmount > 0 ? ['DUE BALANCE', fmt(o.dueAmount), true, [220, 38, 38]] : null,
+      ['Subtotal', pdfFmt(o.subtotal)],
+      o.discountAmount > 0 ? ['Discount', `-${pdfFmt(o.discountAmount)}`] : null,
+      o.taxAmount > 0 ? [`${o.taxName || settings.taxName || 'Tax'} ${o.taxRate ? '(' + o.taxRate + '%)' : ''}`, pdfFmt(o.taxAmount)] : null,
+      ['TOTAL', pdfFmt(o.total), true],
+      ['Paid', pdfFmt(o.paidAmount)],
+      o.dueAmount > 0 ? ['DUE BALANCE', pdfFmt(o.dueAmount), true, [220, 38, 38]] : null,
     ].filter(Boolean);
 
     rows.forEach(([label, value, isBold, color]) => {
@@ -131,11 +147,25 @@ export default function OrdersPage() {
       y += rowH;
     });
 
-    y += 5;
-    doc.setDrawColor(230); doc.line(20, y, 60, y);
-    y += 5;
-    doc.setFontSize(7); doc.setFont('helvetica', 'italic');
-    doc.text(settings.receiptFooter || 'Thank you for your business!', 40, y, { align: 'center' });
+    if (o.paymentDetails?.change > 0) {
+      y += 1;
+      doc.setFont('helvetica', 'normal');
+      doc.text('Change Given', summaryX, y);
+      doc.text(pdfFmt(o.paymentDetails.change), valueX, y, { align: 'right' });
+      y += rowH;
+    }
+
+    y += 3;
+    drawDashedLine(y);
+    y += 6;
+    doc.setFontSize(8); doc.setFont('helvetica', 'italic');
+    
+    const footerLines = doc.splitTextToSize(settings.receiptFooter || 'Thank you for your business!', 70);
+    doc.text(footerLines, 40, y, { align: 'center' });
+    y += 4 * footerLines.length;
+
+    doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(150);
+    doc.text('Powered by SoleMate POS', 40, y, { align: 'center' });
 
     doc.save(`receipt-${o.orderNumber}.pdf`);
   };

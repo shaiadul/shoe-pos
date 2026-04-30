@@ -54,23 +54,23 @@ body {
 /* Custom components */
 @layer components {
   .glass {
-    @apply bg-white/70 dark:bg-surface-900/70 backdrop-blur-md border border-white/20 dark:border-surface-800/50;
+    @apply bg-white/60 dark:bg-surface-900/60 backdrop-blur-xl border border-white/40 dark:border-surface-700/50 shadow-sm;
   }
 
   .card {
-    @apply rounded-2xl border bg-white dark:bg-surface-900 dark:border-surface-800 shadow-sm hover:shadow-md transition-all duration-300;
+    @apply rounded-2xl border bg-white dark:bg-surface-900 dark:border-surface-800 shadow-[0_2px_12px_rgb(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgb(0,0,0,0.2)] hover:shadow-[0_8px_24px_rgb(0,0,0,0.06)] dark:hover:shadow-[0_8px_24px_rgb(0,0,0,0.3)] hover:-translate-y-0.5 transition-all duration-300;
   }
 
   .btn-primary {
-    @apply bg-brand-500 hover:bg-brand-600 text-white font-bold px-6 py-3 rounded-2xl transition-all duration-200 flex items-center gap-2 text-sm active:scale-95 shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40;
+    @apply bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white font-bold px-6 py-3 rounded-2xl transition-all duration-300 flex items-center gap-2 text-sm active:scale-[0.98] shadow-[0_8px_20px_rgb(244,63,94,0.3)] hover:shadow-[0_12px_28px_rgb(244,63,94,0.4)];
   }
 
   .btn-secondary {
-    @apply bg-surface-100 hover:bg-surface-200 dark:bg-surface-800 dark:hover:bg-surface-700 text-surface-700 dark:text-surface-300 font-bold px-6 py-3 rounded-2xl transition-all duration-200 flex items-center gap-2 text-sm active:scale-95;
+    @apply bg-surface-100/80 hover:bg-surface-200 dark:bg-surface-800/80 dark:hover:bg-surface-700 text-surface-700 dark:text-surface-300 font-bold px-6 py-3 rounded-2xl transition-all duration-300 flex items-center gap-2 text-sm active:scale-[0.98];
   }
 
   .btn-danger {
-    @apply bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 text-sm active:scale-95;
+    @apply bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold px-5 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2 text-sm active:scale-[0.98] shadow-md shadow-red-500/20 hover:shadow-lg hover:shadow-red-500/30;
   }
 
   .input {

@@ -22,7 +22,7 @@ export default function Topbar({ onMenuToggle }) {
       {/* Menu button (mobile) */}
       <button
         onClick={onMenuToggle}
-        className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+        className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors text-lg"
       >
         ☰
       </button>

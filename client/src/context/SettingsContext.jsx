@@ -5,6 +5,9 @@ const SettingsContext = createContext(null);
 
 const DEFAULTS = {
   storeName: 'SoleMate POS',
+  storePhone: '',
+  storeEmail: '',
+  storeAddress: '',
   currencySymbol: '৳',
   taxRate: 0,
   taxName: 'VAT',
