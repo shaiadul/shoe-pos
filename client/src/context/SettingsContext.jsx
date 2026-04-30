@@ -3,16 +3,30 @@ import { settingsAPI } from '../api';
 
 const SettingsContext = createContext(null);
 
+const DEFAULTS = {
+  storeName: 'SoleMate POS',
+  currencySymbol: '৳',
+  taxRate: 0,
+  taxName: 'VAT',
+  currency: 'BDT',
+  lowStockThreshold: 5,
+  receiptFooter: 'Thank you for shopping with us!',
+  requireCustomer: false,
+  autoPrintReceipt: false,
+  allowNegativeStock: false,
+  loyaltyPointsPerAmount: 100,
+  loyaltyDiscountPerPoint: 1
+};
+
 export function SettingsProvider({ children }) {
-  const [settings, setSettings] = useState({
-    storeName: 'SoleMate POS', currencySymbol: '৳', taxRate: 0, taxName: 'VAT',
-    currency: 'BDT', lowStockThreshold: 5, receiptFooter: 'Thank you for shopping!',
-  });
+  const [settings, setSettings] = useState(DEFAULTS);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      settingsAPI.get().then(r => setSettings(r.data.settings)).catch(() => {});
+      settingsAPI.get().then(r => {
+        setSettings(prev => ({ ...prev, ...r.data.settings }));
+      }).catch(() => {});
     }
   }, []);
 

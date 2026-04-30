@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { dashboardAPI } from '../api';
 import { useSettings } from '../context/SettingsContext';
-import { LoadingPage } from '../components/UI';
+import { LoadingPage, StatCard } from '../components/UI';
 import toast from 'react-hot-toast';
+import { HiOutlineBanknotes, HiOutlineShoppingCart, HiOutlinePresentationChartLine, HiOutlineTrophy } from 'react-icons/hi2';
 
 const CustomTooltip = ({ active, payload, label, fmt }) => {
   if (!active || !payload?.length) return null;
@@ -72,21 +73,11 @@ export default function ReportsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Period Revenue', value: fmt(totalRevenue), icon: '৳', color: 'text-brand-500' },
-          { label: 'Total Orders', value: totalOrders, icon: '🛒', color: 'text-blue-500' },
-          { label: 'Avg. Order Value', value: fmt(avgOrder), icon: '📊', color: 'text-emerald-500' },
-          { label: 'Best Day Revenue', value: fmt(Math.max(...report.map(r => r.revenue), 0)), icon: '🏆', color: 'text-yellow-500' },
-        ].map((s, i) => (
-          <div key={i} className="card p-4 flex items-center gap-3">
-            <span className="text-2xl">{s.icon}</span>
-            <div>
-              <p className={`text-lg font-extrabold ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-surface-400">{s.label}</p>
-            </div>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard title="Period Revenue" value={fmt(totalRevenue)} icon={<HiOutlineBanknotes />} color="brand" />
+        <StatCard title="Total Orders" value={totalOrders} icon={<HiOutlineShoppingCart />} color="blue" />
+        <StatCard title="Avg. Order Value" value={fmt(avgOrder)} icon={<HiOutlinePresentationChartLine />} color="green" />
+        <StatCard title="Best Day Revenue" value={fmt(Math.max(...report.map(r => r.revenue), 0))} icon={<HiOutlineTrophy />} color="orange" />
       </div>
 
       {loading ? <LoadingPage /> : (

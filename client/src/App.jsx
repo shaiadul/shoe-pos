@@ -23,7 +23,7 @@ export default function App() {
         <SettingsProvider>
           <BrowserRouter>
             <Toaster position="top-right" toastOptions={{
-              style: { fontFamily: 'Inconsolata, sans-serif', fontSize: '14px', borderRadius: '12px', fontWeight: '500' },
+              style: { fontFamily: 'inherit', fontSize: '14px', borderRadius: '12px', fontWeight: '500' },
               success: { iconTheme: { primary: '#ec4899', secondary: '#fff' } },
             }} />
             <Routes>

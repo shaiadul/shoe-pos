@@ -6,9 +6,10 @@ import { tr } from 'date-fns/locale';
 
 import { 
   HiOutlineHome, 
-  HiOutlineShoppingCart, 
+  HiOutlineShoppingBag, 
+  HiOutlineShoppingCart,
   HiOutlineCube, 
-  HiOutlineClipboardList, 
+  HiOutlineClipboardDocumentList, 
   HiOutlineUsers, 
   HiOutlineTruck, 
   HiOutlineChartBar, 
@@ -20,7 +21,7 @@ const navItems = [
   { to: '/dashboard', icon: <HiOutlineHome />, label: 'Dashboard' },
   { to: '/pos', icon: <HiOutlineShoppingCart />, label: 'Point of Sale', highlight: true },
   { to: '/products', icon: <HiOutlineCube />, label: 'Inventory' },
-  { to: '/orders', icon: <HiOutlineClipboardList />, label: 'Sales History' },
+  { to: '/orders', icon: <HiOutlineClipboardDocumentList />, label: 'Sales History' },
   { to: '/customers', icon: <HiOutlineUsers />, label: 'Customers' },
   { to: '/suppliers', icon: <HiOutlineTruck />, label: 'Suppliers' },
   { to: '/reports', icon: <HiOutlineChartBar />, label: 'Analytics' },
