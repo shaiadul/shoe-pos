@@ -227,5 +227,4 @@ sudo certbot --nginx -d yourdomain.com
 - **Socket.io** — Real-time order and stock updates
 
 ## Pending Task
-- Setting not working
-- PDF download not working
+- QA Testing
