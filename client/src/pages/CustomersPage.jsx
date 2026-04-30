@@ -5,6 +5,22 @@ import { useSettings } from '../context/SettingsContext';
 import { Modal, Badge, SearchInput, Pagination, Empty, LoadingPage, ConfirmDialog } from '../components/UI';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { 
+  HiOutlineUser, 
+  HiOutlinePhone, 
+  HiOutlineEnvelope, 
+  HiOutlineMapPin, 
+  HiOutlineTag, 
+  HiOutlineBanknotes, 
+  HiOutlineExclamationTriangle,
+  HiOutlineMagnifyingGlass,
+  HiOutlineCreditCard,
+  HiOutlinePlus,
+  HiOutlinePencilSquare,
+  HiOutlineTrash,
+  HiOutlineTrophy,
+  HiOutlineIdentification
+} from 'react-icons/hi2';
 
 const empty = () => ({ name: '', email: '', phone: '', address: '', city: '', notes: '', discount: 0 });
 
@@ -111,10 +127,16 @@ export default function CustomersPage() {
     finally { setPayingDue(false); }
   };
 
-  const tierColor = (spent) => { if (spent >= 50000) return 'text-yellow-500'; if (spent >= 20000) return 'text-surface-400'; return 'text-amber-600'; };
-  const tierLabel = (spent) => { if (spent >= 50000) return '🥇 Gold'; if (spent >= 20000) return '🥈 Silver'; return '🥉 Bronze'; };
+  const tierColor = (spent) => { if (spent >= 50000) return 'text-yellow-500'; if (spent >= 20000) return 'text-slate-400'; return 'text-amber-600'; };
+  const tierLabel = (spent) => { if (spent >= 50000) return 'Gold'; if (spent >= 20000) return 'Silver'; return 'Bronze'; };
 
-  const pmtIcon = { cash: '💵', card: '💳', mobile_banking: '📱', due: '📋', partial: '🔀' };
+  const pmtIcon = { 
+    cash: <HiOutlineBanknotes />, 
+    card: <HiOutlineCreditCard />, 
+    mobile_banking: '📱', 
+    due: <HiOutlineIdentification />, 
+    partial: '🔀' 
+  };
 
   return (
     <div className="p-6 space-y-5">
@@ -130,19 +152,21 @@ export default function CustomersPage() {
       {/* Due summary banner */}
       {dueSummary?.summary?.totalDue > 0 && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl flex flex-wrap gap-4 items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center text-xl">⚠</div>
+          className="p-5 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-[2rem] flex flex-wrap gap-4 items-center shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-red-500 flex items-center justify-center text-2xl text-white shadow-lg shadow-red-500/20">
+              <HiOutlineExclamationTriangle />
+            </div>
             <div>
-              <p className="font-extrabold text-red-700 dark:text-red-400 text-lg">{fmt(dueSummary.summary.totalDue)}</p>
-              <p className="text-xs text-red-600 dark:text-red-500">Total outstanding due from {dueSummary.summary.count} customers</p>
+              <p className="font-black text-red-700 dark:text-red-400 text-xl tracking-tight">{fmt(dueSummary.summary.totalDue)}</p>
+              <p className="text-xs text-red-600 dark:text-red-500 font-medium">Outstanding due from {dueSummary.summary.count} customers</p>
             </div>
           </div>
           <div className="flex gap-2 flex-wrap ml-auto">
             {dueSummary.topDebtors?.map(d => (
-              <div key={d._id} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-100 dark:bg-red-900/30 rounded-xl text-xs">
-                <span className="font-bold text-red-700 dark:text-red-300">{d.name.split(' ')[0]}</span>
-                <span className="text-red-500 font-semibold">{fmt(d.dueBalance)}</span>
+              <div key={d._id} className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl text-xs shadow-sm">
+                <span className="font-bold text-surface-700 dark:text-red-300">{d.name.split(' ')[0]}</span>
+                <span className="text-red-600 font-black">{fmt(d.dueBalance)}</span>
               </div>
             ))}
           </div>

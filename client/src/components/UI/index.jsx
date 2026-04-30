@@ -162,31 +162,48 @@ export function StatCard({ title, value, icon, trend, trendLabel, color = 'brand
 }
 
 /* ── Search Input ──────────────────────────────────── */
-export function SearchInput({ value, onChange, placeholder = 'Search…' }) {
+export function SearchInput({ value, onChange, placeholder = 'Search…', icon }) {
   return (
-    <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 text-sm">⌕</span>
+    <div className="relative group">
+      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 transition-colors group-focus-within:text-brand-500">
+        {icon || '⌕'}
+      </span>
       <input
         value={value} onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="input pl-9 pr-9"
+        className="input pl-11 pr-11 bg-surface-50/50 border-surface-200/60 focus:bg-white"
       />
       {value && (
-        <button onClick={() => onChange('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 text-sm">×</button>
+        <button onClick={() => onChange('')} className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center text-surface-400 hover:text-surface-600 hover:bg-surface-100 transition-all text-sm">×</button>
       )}
     </div>
   );
 }
 
 /* ── Select ────────────────────────────────────────── */
-export function Select({ value, onChange, options, placeholder, className = '' }) {
+export function Select({ value, onChange, options, placeholder, className = '', icon }) {
   return (
-    <select value={value} onChange={e => onChange(e.target.value)}
-      className={`input appearance-none cursor-pointer ${className}`}>
-      {placeholder && <option value="">{placeholder}</option>}
-      {options.map(o => (
-        <option key={o.value} value={o.value}>{o.label}</option>
-      ))}
-    </select>
+    <div className={`relative ${className}`}>
+      {icon && (
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400">
+          {icon}
+        </span>
+      )}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`input appearance-none cursor-pointer pr-10 ${icon ? 'pl-10' : ''}`}
+      >
+        {placeholder && <option value="">{placeholder}</option>}
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none text-xs">
+        ▼
+      </span>
+    </div>
   );
 }

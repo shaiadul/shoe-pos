@@ -5,6 +5,19 @@ import { dashboardAPI } from '../api';
 import { useSettings } from '../context/SettingsContext';
 import { StatCard, LoadingPage, Badge } from '../components/UI';
 import { format, parseISO } from 'date-fns';
+import { 
+  HiOutlineBanknotes, 
+  HiOutlineShoppingBag, 
+  HiOutlinePresentationChartLine, 
+  HiOutlineExclamationTriangle,
+  HiOutlinePlusCircle,
+  HiOutlineArchiveBox,
+  HiOutlineUserPlus,
+  HiOutlineDocumentChartBar,
+  HiOutlineQueueList,
+  HiOutlineUserGroup,
+  HiOutlineChartPie
+} from 'react-icons/hi2';
 
 const COLORS = ['#ec4899', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'];
 
@@ -76,10 +89,10 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'New Sale', icon: '🛍️', path: '/pos', color: 'bg-brand-500 shadow-brand-500/20' },
-          { label: 'Add Product', icon: '👟', path: '/products', color: 'bg-blue-500 shadow-blue-500/20' },
-          { label: 'Add Customer', icon: '👤', path: '/customers', color: 'bg-purple-500 shadow-purple-500/20' },
-          { label: 'View Reports', icon: '📊', path: '/reports', color: 'bg-emerald-500 shadow-emerald-500/20' },
+          { label: 'New Sale', icon: <HiOutlinePlusCircle />, path: '/pos', color: 'bg-brand-500 shadow-brand-500/20' },
+          { label: 'Add Product', icon: <HiOutlineArchiveBox />, path: '/products', color: 'bg-blue-500 shadow-blue-500/20' },
+          { label: 'Add Customer', icon: <HiOutlineUserPlus />, path: '/customers', color: 'bg-purple-500 shadow-purple-500/20' },
+          { label: 'View Reports', icon: <HiOutlineDocumentChartBar />, path: '/reports', color: 'bg-emerald-500 shadow-emerald-500/20' },
         ].map((action, i) => (
           <motion.button
             key={i}
@@ -99,21 +112,21 @@ export default function DashboardPage() {
         className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div variants={item}>
           <StatCard title="Today's Revenue" value={fmt(stats?.todayRevenue || 0)}
-            icon="৳" color="brand" trend={stats?.revenueGrowth}
+            icon={<HiOutlineBanknotes />} color="brand" trend={stats?.revenueGrowth}
             trendLabel={`vs yesterday ${fmt(stats?.yesterdayRevenue || 0)}`} />
         </motion.div>
         <motion.div variants={item}>
           <StatCard title="Today's Sales" value={stats?.todaySales || 0}
-            icon="🛍" color="blue" sub="Orders completed today" />
+            icon={<HiOutlineShoppingBag />} color="blue" sub="Orders completed today" />
         </motion.div>
         <motion.div variants={item}>
           <StatCard title="Monthly Revenue" value={fmt(stats?.monthRevenue || 0)}
-            icon="📈" color="green" trend={stats?.monthGrowth}
+            icon={<HiOutlinePresentationChartLine />} color="green" trend={stats?.monthGrowth}
             trendLabel={`vs last month`} />
         </motion.div>
         <motion.div variants={item}>
           <StatCard title="Low Stock Items" value={stats?.lowStockCount || 0}
-            icon="⚠" color={stats?.lowStockCount > 0 ? 'red' : 'green'} sub="Need restocking" />
+            icon={<HiOutlineExclamationTriangle />} color={stats?.lowStockCount > 0 ? 'red' : 'green'} sub="Need restocking" />
         </motion.div>
       </motion.div>
 
@@ -234,16 +247,18 @@ export default function DashboardPage() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
         className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Products', value: stats?.totalProducts || 0, icon: '👟', color: 'text-brand-500' },
-          { label: 'Total Customers', value: stats?.totalCustomers || 0, icon: '👥', color: 'text-blue-500' },
-          { label: 'Monthly Orders', value: stats?.monthSales || 0, icon: '🛒', color: 'text-emerald-500' },
-          { label: 'Avg. Order', value: fmt(stats?.monthSales > 0 ? (stats?.monthRevenue || 0) / stats?.monthSales : 0), icon: '📊', color: 'text-purple-500' },
+          { label: 'Total Products', value: stats?.totalProducts || 0, icon: <HiOutlineArchiveBox />, color: 'bg-brand-500/10 text-brand-500' },
+          { label: 'Total Customers', value: stats?.totalCustomers || 0, icon: <HiOutlineUserGroup />, color: 'bg-blue-500/10 text-blue-500' },
+          { label: 'Monthly Orders', value: stats?.monthSales || 0, icon: <HiOutlineQueueList />, color: 'bg-emerald-500/10 text-emerald-500' },
+          { label: 'Avg. Order', value: fmt(stats?.monthSales > 0 ? (stats?.monthRevenue || 0) / stats?.monthSales : 0), icon: <HiOutlineChartPie />, color: 'bg-purple-500/10 text-purple-500' },
         ].map((s, i) => (
-          <div key={i} className="card p-4 flex items-center gap-3">
-            <span className="text-2xl">{s.icon}</span>
+          <div key={i} className="card p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${s.color}`}>
+              {s.icon}
+            </div>
             <div>
-              <p className={`text-lg font-extrabold ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-surface-400">{s.label}</p>
+              <p className="text-xl font-black text-surface-900 dark:text-white tracking-tight">{s.value}</p>
+              <p className="text-xs font-medium text-surface-400 mt-0.5">{s.label}</p>
             </div>
           </div>
         ))}

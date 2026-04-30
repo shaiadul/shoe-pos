@@ -3,13 +3,32 @@ import { motion } from 'framer-motion';
 import { orderAPI } from '../api';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
-import { Modal, Badge, SearchInput, Pagination, Empty, LoadingPage } from '../components/UI';
+import { Modal, Badge, SearchInput, Pagination, Empty, LoadingPage, Select } from '../components/UI';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { jsPDF } from 'jspdf';
 
+import { 
+  HiOutlineCreditCard, 
+  HiOutlineBanknotes, 
+  HiOutlineDevicePhoneMobile, 
+  HiOutlineArrowsRightLeft,
+  HiOutlineDocumentText,
+  HiOutlineMagnifyingGlass,
+  HiOutlineFunnel,
+  HiOutlinePrinter,
+  HiOutlineArrowDownTray,
+  HiOutlineArchiveBox,
+  HiOutlineReceiptRefund
+} from 'react-icons/hi2';
+
 const statusMap = { completed: 'green', pending: 'yellow', refunded: 'blue', cancelled: 'red' };
-const pmtMap = { cash: '💵', card: '💳', mobile_banking: '📱', mixed: '🔀' };
+const pmtMap = { 
+  cash: <HiOutlineBanknotes />, 
+  card: <HiOutlineCreditCard />, 
+  mobile_banking: <HiOutlineDevicePhoneMobile />, 
+  mixed: <HiOutlineArrowsRightLeft /> 
+};
 
 export default function OrdersPage() {
   const { fmt, settings } = useSettings();
@@ -73,13 +92,23 @@ export default function OrdersPage() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <div className="w-64"><SearchInput value={search} onChange={setSearch} placeholder="Search order #, customer…" /></div>
-        <select value={status} onChange={e => setStatus(e.target.value)} className="input w-36">
-          <option value="">All Status</option>
-          {['completed','pending','refunded','cancelled'].map(s => (
-            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-          ))}
-        </select>
+        <div className="w-full md:w-64">
+          <SearchInput 
+            value={search} 
+            onChange={setSearch} 
+            placeholder="Search order #, customer…" 
+            icon={<HiOutlineMagnifyingGlass />}
+          />
+        </div>
+        <div className="w-full md:w-40">
+          <Select
+            value={status}
+            onChange={setStatus}
+            options={['completed','pending','refunded','cancelled'].map(s => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))}
+            placeholder="All Status"
+            icon={<HiOutlineFunnel />}
+          />
+        </div>
       </div>
 
       <div className="card overflow-hidden">
@@ -114,8 +143,8 @@ export default function OrdersPage() {
                       <td className="table-cell font-black text-brand-500 text-base tracking-tight">{fmt(o.total)}</td>
                       <td className="table-cell">
                         <button onClick={e => { e.stopPropagation(); printReceipt(o); }}
-                          className="text-xs px-2 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-surface-500 hover:bg-brand-100 hover:text-brand-600 transition-colors">
-                          PDF
+                          className="w-8 h-8 rounded-lg bg-surface-100 dark:bg-surface-800 text-surface-500 hover:bg-brand-500 hover:text-white transition-all flex items-center justify-center">
+                          <HiOutlineArrowDownTray />
                         </button>
                       </td>
                     </motion.tr>
@@ -156,15 +185,17 @@ export default function OrdersPage() {
               <p className="label">Items</p>
               <div className="space-y-1.5">
                 {selected.items.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-2.5 bg-surface-50 dark:bg-surface-800 rounded-xl text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">👟</span>
+                  <div key={i} className="flex items-center justify-between p-3 bg-surface-50 dark:bg-surface-800 rounded-xl text-xs border border-transparent hover:border-surface-200 dark:hover:border-surface-700 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-surface-100 dark:bg-surface-700 flex items-center justify-center text-xl text-surface-400 shrink-0 overflow-hidden">
+                         {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" /> : <HiOutlineArchiveBox />}
+                      </div>
                       <div>
-                        <p className="font-semibold text-surface-800 dark:text-surface-200">{item.name}</p>
-                        <p className="text-surface-400">Size {item.size} · {item.color} · ×{item.quantity}</p>
+                        <p className="font-bold text-surface-800 dark:text-surface-200">{item.name}</p>
+                        <p className="text-[10px] text-surface-400 font-medium">Size {item.size} · {item.color} · ×{item.quantity}</p>
                       </div>
                     </div>
-                    <p className="font-bold text-brand-500">{fmt(item.total)}</p>
+                    <p className="font-black text-brand-500">{fmt(item.total)}</p>
                   </div>
                 ))}
               </div>

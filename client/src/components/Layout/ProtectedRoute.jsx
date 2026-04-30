@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { HiOutlineShoppingBag } from 'react-icons/hi2';
 
 export default function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -8,7 +9,9 @@ export default function ProtectedRoute({ children, roles }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center text-2xl animate-bounce">👟</div>
+          <div className="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center text-2xl animate-bounce text-white">
+            <HiOutlineShoppingBag />
+          </div>
           <p className="text-sm font-semibold text-surface-500 tracking-widest uppercase">Loading…</p>
         </div>
       </div>
