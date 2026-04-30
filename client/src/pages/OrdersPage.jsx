@@ -67,8 +67,8 @@ export default function OrdersPage() {
     <div className="p-6 space-y-5">
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div>
-          <h2 className="section-title">Orders</h2>
-          <p className="text-xs text-surface-400 mt-0.5">{total} orders total</p>
+          <h2 className="section-title text-2xl font-black tracking-tight">Sales History</h2>
+          <p className="text-xs text-surface-400 mt-1 font-medium">{total} orders recorded</p>
         </div>
       </div>
 
@@ -111,7 +111,7 @@ export default function OrdersPage() {
                       <td className="table-cell">
                         <Badge variant={statusMap[o.status]} dot>{o.status}</Badge>
                       </td>
-                      <td className="table-cell font-extrabold text-brand-500">{fmt(o.total)}</td>
+                      <td className="table-cell font-black text-brand-500 text-base tracking-tight">{fmt(o.total)}</td>
                       <td className="table-cell">
                         <button onClick={e => { e.stopPropagation(); printReceipt(o); }}
                           className="text-xs px-2 py-1 rounded-lg bg-surface-100 dark:bg-surface-800 text-surface-500 hover:bg-brand-100 hover:text-brand-600 transition-colors">
@@ -181,9 +181,16 @@ export default function OrdersPage() {
             </div>
 
             <div className="flex gap-2 justify-end">
-              {can(['admin', 'manager']) && selected.status === 'completed' && (
-                <button onClick={async () => { await orderAPI.updateStatus(selected._id, 'refunded'); toast.success('Marked as refunded'); setSelected(null); load(page); }}
-                  className="btn-secondary text-xs">Mark Refunded</button>
+              {can(['admin']) && selected.status === 'completed' && (
+                <button onClick={async () => { 
+                  if(window.confirm('Mark this order as refunded?')) {
+                    await orderAPI.updateStatus(selected._id, 'refunded'); 
+                    toast.success('Marked as refunded'); 
+                    setSelected(null); 
+                    load(page); 
+                  }
+                }}
+                  className="btn-secondary text-xs font-bold text-red-500">Refund Order</button>
               )}
               <button onClick={() => printReceipt(selected)} className="btn-primary text-xs">⬇ Download Receipt</button>
             </div>

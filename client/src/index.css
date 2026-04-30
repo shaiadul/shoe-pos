@@ -11,8 +11,9 @@
 * { box-sizing: border-box; }
 
 body {
-  font-family: 'Inconsolata', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
 }
 
 /* Light mode */
@@ -51,16 +52,20 @@ body {
 
 /* Custom components */
 @layer components {
+  .glass {
+    @apply bg-white/70 dark:bg-surface-900/70 backdrop-blur-md border border-white/20 dark:border-surface-800/50;
+  }
+
   .card {
-    @apply rounded-2xl border bg-white dark:bg-surface-900 dark:border-surface-800 shadow-sm;
+    @apply rounded-2xl border bg-white dark:bg-surface-900 dark:border-surface-800 shadow-sm hover:shadow-md transition-all duration-300;
   }
 
   .btn-primary {
-    @apply bg-brand-500 hover:bg-brand-600 text-white font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 text-sm active:scale-95;
+    @apply bg-brand-500 hover:bg-brand-600 text-white font-bold px-6 py-3 rounded-2xl transition-all duration-200 flex items-center gap-2 text-sm active:scale-95 shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40;
   }
 
   .btn-secondary {
-    @apply bg-surface-100 hover:bg-surface-200 dark:bg-surface-800 dark:hover:bg-surface-700 text-surface-700 dark:text-surface-300 font-medium px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 text-sm active:scale-95;
+    @apply bg-surface-100 hover:bg-surface-200 dark:bg-surface-800 dark:hover:bg-surface-700 text-surface-700 dark:text-surface-300 font-bold px-6 py-3 rounded-2xl transition-all duration-200 flex items-center gap-2 text-sm active:scale-95;
   }
 
   .btn-danger {

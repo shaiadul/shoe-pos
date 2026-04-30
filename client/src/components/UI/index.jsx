@@ -14,11 +14,11 @@ export function Modal({ open, onClose, title, children, size = 'md' }) {
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }} transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className={`${sizes[size]} w-full bg-white dark:bg-surface-900 rounded-2xl shadow-2xl overflow-hidden`}
+            className={`${sizes[size]} w-full bg-white dark:bg-surface-900 rounded-[2rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] dark:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.4)] overflow-hidden border border-white/20 dark:border-surface-800/50`}
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
-              <h2 className="font-bold text-surface-900 dark:text-white text-lg">{title}</h2>
-              <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors text-xl">×</button>
+            <div className="flex items-center justify-between px-8 py-6 border-b border-surface-100 dark:border-surface-800">
+              <h2 className="font-black text-surface-950 dark:text-white text-xl tracking-tight">{title}</h2>
+              <button onClick={onClose} className="w-10 h-10 rounded-2xl flex items-center justify-center text-surface-400 hover:text-surface-950 dark:hover:text-white hover:bg-surface-100 dark:hover:bg-surface-800 transition-all text-2xl">✕</button>
             </div>
             <div className="overflow-y-auto max-h-[80vh]">{children}</div>
           </motion.div>
@@ -141,20 +141,21 @@ export function StatCard({ title, value, icon, trend, trendLabel, color = 'brand
   const isPositive = parseFloat(trend) >= 0;
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-      className="card p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
+      whileHover={{ y: -5 }}
+      className="card p-6 flex flex-col gap-4 border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] bg-white dark:bg-surface-900 transition-all">
       <div className="flex items-start justify-between">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${colors[color]}`}>{icon}</div>
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${colors[color]}`}>{icon}</div>
         {trend !== undefined && (
-          <span className={`text-xs font-bold px-2 py-1 rounded-lg ${isPositive ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'}`}>
+          <span className={`text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-wider ${isPositive ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 'bg-red-50 dark:bg-red-900/20 text-red-600'}`}>
             {isPositive ? '↑' : '↓'} {Math.abs(trend)}%
           </span>
         )}
       </div>
       <div>
-        <p className="text-2xl font-extrabold text-surface-900 dark:text-white">{value}</p>
-        <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mt-0.5">{title}</p>
-        {sub && <p className="text-xs text-surface-400 mt-0.5">{sub}</p>}
-        {trendLabel && <p className="text-xs text-surface-400 mt-0.5">{trendLabel}</p>}
+        <p className="text-3xl font-black text-surface-950 dark:text-white tracking-tight">{value}</p>
+        <p className="text-[11px] font-bold text-surface-400 dark:text-surface-500 uppercase tracking-widest mt-1">{title}</p>
+        {sub && <p className="text-xs text-surface-400 mt-1 font-medium">{sub}</p>}
+        {trendLabel && <p className="text-xs text-surface-400 mt-1 font-medium italic opacity-70">{trendLabel}</p>}
       </div>
     </motion.div>
   );

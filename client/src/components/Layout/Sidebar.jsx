@@ -5,15 +5,15 @@ import { useSettings } from '../../context/SettingsContext';
 import { tr } from 'date-fns/locale';
 
 const navItems = [
-  { to: '/dashboard', icon: '⬡', label: 'Dashboard' },
-  { to: '/pos', icon: '⊕', label: 'Point of Sale', highlight: true },
-  { to: '/products', icon: '◈', label: 'Products' },
-  { to: '/orders', icon: '◎', label: 'Orders' },
-  { to: '/customers', icon: '◉', label: 'Customers' },
-  { to: '/suppliers', icon: '⬠', label: 'Suppliers' },
-  { to: '/reports', icon: '◫', label: 'Reports' },
-  { to: '/users', icon: '⬡', label: 'Users' },
-  { to: '/settings', icon: '⊙', label: 'Settings' },
+  { to: '/dashboard', icon: '🏠', label: 'Dashboard' },
+  { to: '/pos', icon: '🛒', label: 'Point of Sale', highlight: true },
+  { to: '/products', icon: '👟', label: 'Inventory' },
+  { to: '/orders', icon: '🧾', label: 'Sales History' },
+  { to: '/customers', icon: '👥', label: 'Customers' },
+  { to: '/suppliers', icon: '🚚', label: 'Suppliers' },
+  { to: '/reports', icon: '📈', label: 'Analytics' },
+  { to: '/users', icon: '🛡️', label: 'Staff Management' },
+  { to: '/settings', icon: '⚙️', label: 'Settings' },
 ];
 
 export default function Sidebar({ open, onClose }) {
@@ -41,15 +41,15 @@ export default function Sidebar({ open, onClose }) {
                    lg:translate-x-0 lg:static lg:z-auto"
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-surface-100 dark:border-surface-800">
-          <div className="w-9 h-9 rounded-xl bg-brand-500 flex items-center justify-center text-lg shadow-lg shadow-brand-500/30">
+        <div className="flex items-center gap-3 px-6 py-8 border-b border-surface-100 dark:border-surface-800">
+          <div className="w-11 h-11 rounded-2xl bg-brand-500 flex items-center justify-center text-2xl shadow-xl shadow-brand-500/40">
             👟
           </div>
-          <div>
-            <p className="font-extrabold text-sm text-surface-900 dark:text-white leading-tight">{settings.storeName}</p>
-            <p className="text-[10px] font-mono text-brand-500 uppercase tracking-widest">POS System</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-black text-lg text-surface-950 dark:text-white leading-none tracking-tight truncate">{settings.storeName}</p>
+            <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest mt-1 opacity-80">Enterprise POS</p>
           </div>
-          <button onClick={onClose} className="ml-auto lg:hidden text-surface-400 hover:text-surface-600 text-xl">×</button>
+          <button onClick={onClose} className="lg:hidden text-surface-400 hover:text-surface-600 text-2xl">✕</button>
         </div>
 
         {/* Nav */}

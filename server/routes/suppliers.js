@@ -4,8 +4,8 @@ const { getSuppliers, getSupplier, createSupplier, updateSupplier, deleteSupplie
 const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
-router.route('/').get(getSuppliers).post(authorize('admin', 'manager'), createSupplier);
-router.route('/:id').get(getSupplier).put(authorize('admin', 'manager'), updateSupplier).delete(authorize('admin'), deleteSupplier);
-router.post('/:id/purchase', authorize('admin', 'manager'), addPurchase);
+router.route('/').get(getSuppliers).post(authorize('admin'), createSupplier);
+router.route('/:id').get(getSupplier).put(authorize('admin'), updateSupplier).delete(authorize('admin'), deleteSupplier);
+router.post('/:id/purchase', authorize('admin'), addPurchase);
 
 module.exports = router;

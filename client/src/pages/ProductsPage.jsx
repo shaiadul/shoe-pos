@@ -53,6 +53,11 @@ export default function ProductsPage() {
 
   const openEdit = (p) => { setEditing(p); setForm({ ...p, images: p.images?.length ? p.images : [''] }); setShowForm(true); };
   const openCreate = () => { setEditing(null); setForm(empty()); setShowForm(true); };
+  const duplicate = (p) => { 
+    setEditing(null); 
+    setForm({ ...p, _id: undefined, name: `${p.name} (Copy)`, variants: p.variants.map(v => ({ ...v, stock: 0 })) }); 
+    setShowForm(true); 
+  };
   const closeForm = () => { setShowForm(false); setEditing(null); };
 
   const setVariant = (i, key, val) => {
@@ -97,8 +102,8 @@ export default function ProductsPage() {
           <h2 className="section-title">Products</h2>
           <p className="text-xs text-surface-400 mt-0.5">{total} products total</p>
         </div>
-        {can(['admin', 'manager']) && (
-          <button onClick={openCreate} className="btn-primary">+ Add Product</button>
+        {can(['admin']) && (
+          <button onClick={openCreate} className="btn-primary shadow-brand-500/20">+ Add Product</button>
         )}
       </div>
 
@@ -157,10 +162,11 @@ export default function ProductsPage() {
                       </div>
                       <p className="text-xs text-surface-400">{p.totalStock} units</p>
                     </div>
-                    {can(['admin', 'manager']) && (
-                      <div className="flex gap-1.5 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEdit(p)} className="flex-1 py-1.5 rounded-lg bg-surface-100 dark:bg-surface-800 text-xs font-semibold text-surface-600 dark:text-surface-400 hover:bg-brand-100 dark:hover:bg-brand-900/30 hover:text-brand-600 transition-colors">Edit</button>
-                        <button onClick={() => setDeleting(p._id)} className="flex-1 py-1.5 rounded-lg bg-surface-100 dark:bg-surface-800 text-xs font-semibold text-surface-600 dark:text-surface-400 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 transition-colors">Delete</button>
+                    {can(['admin']) && (
+                      <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => openEdit(p)} className="flex-1 py-2 rounded-xl bg-surface-100 dark:bg-surface-800 text-xs font-bold text-surface-600 dark:text-surface-400 hover:bg-brand-500 hover:text-white transition-all">Edit</button>
+                        <button onClick={() => duplicate(p)} className="flex-1 py-2 rounded-xl bg-surface-100 dark:bg-surface-800 text-xs font-bold text-surface-600 dark:text-surface-400 hover:bg-blue-500 hover:text-white transition-all">Copy</button>
+                        <button onClick={() => setDeleting(p._id)} className="w-10 py-2 rounded-xl bg-surface-100 dark:bg-surface-800 text-xs font-bold text-surface-600 dark:text-surface-400 hover:bg-red-500 hover:text-white transition-all">✕</button>
                       </div>
                     )}
                   </div>

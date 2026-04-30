@@ -7,12 +7,12 @@ import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 
 const empty = () => ({ name: '', email: '', password: '', role: 'staff', phone: '', store: 'Main Store' });
-const roleColors = { admin: 'pink', manager: 'blue', staff: 'green' };
+const roleColors = { admin: 'pink', staff: 'green' };
 
 export default function UsersPage() {
   const { user: me } = useAuth();
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(empty());
@@ -63,8 +63,19 @@ export default function UsersPage() {
       </div>
 
       {loading ? <LoadingPage /> : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {users.map((u, i) => (
+        <>
+          <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="input w-64"
+            />
+            <button onClick={() => { setEditing(null); setForm(empty()); setShowForm(true); }} className="btn-primary">+ Add User</button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase())).map((u, i) => (
             <motion.div key={u._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               className="card p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start gap-3 mb-4">
@@ -109,8 +120,9 @@ export default function UsersPage() {
                 </div>
               )}
             </motion.div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
       {!loading && users.length === 0 && <Empty icon="👥" title="No users yet" />}
@@ -137,9 +149,8 @@ export default function UsersPage() {
             <div>
               <label className="label">Role *</label>
               <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} className="input">
-                <option value="staff">Staff</option>
-                <option value="manager">Manager</option>
-                <option value="admin">Admin</option>
+                  <option value="staff">Staff</option>
+                  <option value="admin">Admin</option>
               </select>
             </div>
             <div>

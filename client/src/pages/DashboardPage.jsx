@@ -62,13 +62,36 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="section-title">Overview</h2>
-          <p className="text-xs text-surface-400 mt-0.5">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <h2 className="section-title text-2xl font-black tracking-tight">Dashboard Overview</h2>
+          <p className="text-xs text-surface-400 mt-1 font-medium">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-xs text-surface-500 font-medium">Live</span>
+        <div className="flex items-center gap-3">
+           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Live System</span>
+          </div>
         </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'New Sale', icon: '🛍️', path: '/pos', color: 'bg-brand-500 shadow-brand-500/20' },
+          { label: 'Add Product', icon: '👟', path: '/products', color: 'bg-blue-500 shadow-blue-500/20' },
+          { label: 'Add Customer', icon: '👤', path: '/customers', color: 'bg-purple-500 shadow-purple-500/20' },
+          { label: 'View Reports', icon: '📊', path: '/reports', color: 'bg-emerald-500 shadow-emerald-500/20' },
+        ].map((action, i) => (
+          <motion.button
+            key={i}
+            whileHover={{ y: -4, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => window.location.href = action.path}
+            className={`flex items-center gap-3 p-4 rounded-2xl text-white shadow-lg transition-all ${action.color}`}
+          >
+            <span className="text-2xl">{action.icon}</span>
+            <span className="font-bold text-sm">{action.label}</span>
+          </motion.button>
+        ))}
       </div>
 
       {/* Stat cards */}

@@ -272,30 +272,31 @@ export default function POSPage() {
                   const discPrice = product.price * (1 - product.discount / 100);
                   return (
                     <motion.div key={product._id}
-                      initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                      className={`pos-product-card relative ${!hasStock ? 'opacity-50' : ''}`}
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ scale: 1.03 }}
+                      className={`pos-product-card relative bg-white dark:bg-surface-900 border-none shadow-[0_4px_20px_rgb(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgb(0,0,0,0.2)] ${!hasStock ? 'opacity-50' : ''}`}
                       onClick={() => hasStock && openSizeModal(product)}>
                       {product.discount > 0 && (
-                        <div className="absolute top-2 left-2 z-10 bg-brand-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">-{product.discount}%</div>
+                        <div className="absolute top-2 left-2 z-10 bg-brand-500 text-white text-[10px] font-black px-2 py-0.5 rounded-lg shadow-lg">-{product.discount}%</div>
                       )}
                       {!hasStock && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-surface-900/60 rounded-2xl z-10">
-                          <span className="text-[10px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">OUT OF STOCK</span>
+                        <div className="absolute inset-0 flex items-center justify-center bg-surface-900/60 rounded-2xl z-10 backdrop-blur-[2px]">
+                          <span className="text-[10px] font-black text-white bg-red-500 px-3 py-1 rounded-full shadow-lg">OUT OF STOCK</span>
                         </div>
                       )}
-                      <div className="aspect-square bg-surface-100 dark:bg-surface-800 rounded-xl mb-2 flex items-center justify-center overflow-hidden">
+                      <div className="aspect-square bg-surface-50 dark:bg-surface-800 rounded-2xl mb-3 flex items-center justify-center overflow-hidden border border-surface-100 dark:border-surface-800">
                         {product.images?.[0] ? (
                           <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
-                        ) : <span className="text-4xl">👟</span>}
+                        ) : <span className="text-5xl opacity-40">👟</span>}
                       </div>
-                      <p className="text-[11px] font-bold text-surface-800 dark:text-surface-200 truncate">{product.name}</p>
-                      <p className="text-[10px] text-surface-400 truncate">{product.brand}</p>
-                      <div className="flex items-center justify-between mt-1.5">
+                      <p className="text-[12px] font-black text-surface-950 dark:text-white truncate tracking-tight">{product.name}</p>
+                      <p className="text-[10px] font-bold text-surface-400 uppercase tracking-widest">{product.brand}</p>
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-surface-50 dark:border-surface-800">
                         <div>
-                          <p className="text-xs font-extrabold text-brand-500">{fmt(discPrice)}</p>
-                          {product.discount > 0 && <p className="text-[9px] text-surface-400 line-through">{fmt(product.price)}</p>}
+                          <p className="text-sm font-black text-brand-500 tracking-tight">{fmt(discPrice)}</p>
+                          {product.discount > 0 && <p className="text-[10px] text-surface-400 line-through opacity-60 font-medium">{fmt(product.price)}</p>}
                         </div>
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${product.totalStock <= 5 ? 'bg-red-100 dark:bg-red-900/30 text-red-600' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600'}`}>
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${product.totalStock <= 5 ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-500'}`}>
                           {product.totalStock}
                         </span>
                       </div>
@@ -445,8 +446,8 @@ export default function POSPage() {
                 <span>Total</span><span className="text-brand-500 text-base">{fmt(total)}</span>
               </div>
             </div>
-            <button onClick={() => setShowCheckout(true)} className="btn-primary w-full justify-center py-3 text-sm shadow-lg shadow-brand-500/30">
-              Checkout — {fmt(total)} →
+            <button onClick={() => setShowCheckout(true)} className="btn-primary w-full justify-center py-4 text-base shadow-[0_20px_50px_rgba(236,72,153,0.3)] rounded-2xl active:scale-95 transition-all">
+              Complete Order — {fmt(total)}
             </button>
           </div>
         )}
