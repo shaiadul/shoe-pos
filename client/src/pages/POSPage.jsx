@@ -2,9 +2,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { productAPI, customerAPI, orderAPI } from '../api';
 import { useSettings } from '../context/SettingsContext';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Modal, Spinner, SearchInput, SkeletonGrid } from '../components/UI';
 import toast from 'react-hot-toast';
+import { format } from 'date-fns';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { 
@@ -38,7 +40,8 @@ const PAYMENT_METHODS = [
 
 export default function POSPage() {
   const { settings, fmt } = useSettings();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
+  const navigate = useNavigate();
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -138,6 +141,7 @@ export default function POSPage() {
         key, productId: product._id, name: product.name, brand: product.brand,
         size: variant.size, color: variant.color, sku: variant.sku,
         price: product.price, discount: product.discount, stock: variant.stock,
+        image: product.images?.[0],
         quantity: 1,
       }];
     });
@@ -177,7 +181,7 @@ export default function POSPage() {
   }, [cart, orderDiscount, settings.taxRate, paymentMethod, cashPaid, partialPaid]);
 
   // Validate checkout
-  const needsCustomer = ['due', 'partial'].includes(paymentMethod);
+  const needsCustomer = ['due', 'partial'].includes(paymentMethod) || settings.requireCustomer;
   const canCheckout = cart.length > 0 &&
     (!needsCustomer || customer) &&
     (paymentMethod !== 'cash' || !cashPaid || parseFloat(cashPaid) >= total) &&
@@ -198,7 +202,9 @@ export default function POSPage() {
         items,
         customer: customer?._id,
         customerName: customer?.name || 'Walk-in Customer',
-        subtotal, discountAmount: discountAmt, taxAmount: taxAmt, total,
+        subtotal, discountAmount: discountAmt, taxAmount: taxAmt,
+        taxRate: settings.taxRate, taxName: settings.taxName,
+        total,
         paidAmount: effectivePaid,
         paymentMethod,
         paymentDetails: {
@@ -212,36 +218,55 @@ export default function POSPage() {
       setShowReceipt(true);
       clearCart();
       toast.success('Order completed! 🎉');
+      
+      if (settings.autoPrintReceipt) {
+        setTimeout(() => printReceipt(r.data.order), 500);
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Order failed');
     } finally { setProcessingOrder(false); }
   };
 
-  const printReceipt = () => {
+  const printReceipt = (orderData) => {
+    const o = orderData?.orderNumber ? orderData : completedOrder;
+    if (!o) return;
     const doc = new jsPDF({ format: [80, 220], unit: 'mm' });
-    const o = completedOrder;
     let y = 10;
+    
+    const pdfFmt = (amount) => `BDT ${Number(amount).toLocaleString('en-BD', { minimumFractionDigits: 0 })}`;
+    
+    const drawDashedLine = (yPos) => {
+      doc.setDrawColor(200);
+      doc.setLineWidth(0.5);
+      doc.setLineDashPattern([2, 2], 0);
+      doc.line(5, yPos, 75, yPos);
+      doc.setLineDashPattern([], 0); // reset
+    };
 
     // Header
-    doc.setFontSize(14); doc.setFont('helvetica', 'bold');
-    doc.text(settings.storeName.toUpperCase(), 40, y, { align: 'center' });
+    doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+    doc.text((settings.storeName || 'SoleMate POS').toUpperCase(), 40, y, { align: 'center' });
     y += 5;
-    doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal');
     const headerInfo = [settings.storeAddress, settings.storePhone, settings.storeEmail].filter(Boolean);
-    headerInfo.forEach(text => { doc.text(text, 40, y, { align: 'center' }); y += 3.5; });
+    headerInfo.forEach(text => { 
+      const lines = doc.splitTextToSize(text, 70);
+      doc.text(lines, 40, y, { align: 'center' }); 
+      y += 4 * lines.length; 
+    });
     
-    y += 2;
-    doc.setDrawColor(230); doc.line(5, y, 75, y);
+    y += 1;
+    drawDashedLine(y);
     y += 5;
 
     // Order Info
-    doc.setFontSize(7.5); doc.setFont('helvetica', 'bold');
-    doc.text('INVOICE:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(`#${o.orderNumber}`, 20, y);
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(`#${o.orderNumber}`, 22, y);
     doc.text(format(new Date(o.createdAt), 'dd/MM/yyyy HH:mm'), 75, y, { align: 'right' });
     y += 4;
-    doc.setFont('helvetica', 'bold'); doc.text('CUSTOMER:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(o.customerName, 22, y);
+    doc.setFont('helvetica', 'bold'); doc.text('CUSTOMER:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(o.customerName, 26, y);
     y += 4;
-    doc.setFont('helvetica', 'bold'); doc.text('CASHIER:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(o.cashierName, 20, y);
+    doc.setFont('helvetica', 'bold'); doc.text('CASHIER:', 5, y); doc.setFont('helvetica', 'normal'); doc.text(o.cashierName || 'System', 22, y);
     y += 6;
 
     // Items Table
@@ -249,38 +274,40 @@ export default function POSPage() {
       startY: y,
       head: [['Item', 'Qty', 'Price', 'Total']],
       body: o.items.map(i => [
-        `${i.name}\n${i.brand} - ${i.size}`,
+        `${i.name}\n${i.brand ? i.brand + ' - ' : ''}${i.size}`,
         i.quantity,
         i.price.toLocaleString(),
         i.total.toFixed(0)
       ]),
       theme: 'plain',
-      styles: { fontSize: 7, cellPadding: 1, overflow: 'linebreak' },
-      headStyles: { fontStyle: 'bold', borderBottom: 0.1, borderBottomColor: 200 },
+      styles: { fontSize: 8, cellPadding: 1, overflow: 'linebreak', font: 'helvetica' },
+      headStyles: { fontStyle: 'bold', borderBottomWidth: 0.5, borderBottomColor: 200 },
       columnStyles: {
-        0: { cellWidth: 35 },
-        1: { halign: 'center' },
-        2: { halign: 'right' },
-        3: { halign: 'right', fontStyle: 'bold' }
+        0: { cellWidth: 34 },
+        1: { halign: 'center', cellWidth: 10 },
+        2: { halign: 'right', cellWidth: 15 },
+        3: { halign: 'right', fontStyle: 'bold', cellWidth: 15 }
       },
       margin: { left: 5, right: 5 }
     });
 
-    y = doc.lastAutoTable.finalY + 5;
+    y = doc.lastAutoTable.finalY + 4;
+    drawDashedLine(y);
+    y += 5;
 
     // Summary
-    const summaryX = 45;
+    const summaryX = 40;
     const valueX = 75;
-    const rowH = 4;
+    const rowH = 4.5;
     
-    doc.setFontSize(7.5);
+    doc.setFontSize(8);
     const rows = [
-      ['Subtotal', fmt(o.subtotal)],
-      o.discountAmount > 0 ? ['Discount', `-${fmt(o.discountAmount)}`] : null,
-      o.taxAmount > 0 ? [`${settings.taxName} (${settings.taxRate}%)`, fmt(o.taxAmount)] : null,
-      ['TOTAL', fmt(o.total), true],
-      ['Paid', fmt(o.paidAmount)],
-      o.dueAmount > 0 ? ['DUE BALANCE', fmt(o.dueAmount), true, [220, 38, 38]] : null,
+      ['Subtotal', pdfFmt(o.subtotal)],
+      o.discountAmount > 0 ? ['Discount', `-${pdfFmt(o.discountAmount)}`] : null,
+      o.taxAmount > 0 ? [`${o.taxName || settings.taxName || 'Tax'} ${o.taxRate ? '(' + o.taxRate + '%)' : ''}`, pdfFmt(o.taxAmount)] : null,
+      ['TOTAL', pdfFmt(o.total), true],
+      ['Paid', pdfFmt(o.paidAmount)],
+      o.dueAmount > 0 ? ['DUE BALANCE', pdfFmt(o.dueAmount), true, [220, 38, 38]] : null,
     ].filter(Boolean);
 
     rows.forEach(([label, value, isBold, color]) => {
@@ -296,15 +323,21 @@ export default function POSPage() {
       y += 1;
       doc.setFont('helvetica', 'normal');
       doc.text('Change Given', summaryX, y);
-      doc.text(fmt(o.paymentDetails.change), valueX, y, { align: 'right' });
-      y += 5;
+      doc.text(pdfFmt(o.paymentDetails.change), valueX, y, { align: 'right' });
+      y += rowH;
     }
 
-    y += 5;
-    doc.setDrawColor(230); doc.line(20, y, 60, y);
-    y += 5;
-    doc.setFontSize(7); doc.setFont('helvetica', 'italic');
-    doc.text(settings.receiptFooter || 'Thank you for your business!', 40, y, { align: 'center' });
+    y += 3;
+    drawDashedLine(y);
+    y += 6;
+    doc.setFontSize(8); doc.setFont('helvetica', 'italic');
+    
+    const footerLines = doc.splitTextToSize(settings.receiptFooter || 'Thank you for your business!', 70);
+    doc.text(footerLines, 40, y, { align: 'center' });
+    y += 4 * footerLines.length;
+
+    doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(150);
+    doc.text('Powered by SoleMate POS', 40, y, { align: 'center' });
 
     doc.save(`receipt-${o.orderNumber}.pdf`);
   };
@@ -358,7 +391,12 @@ export default function POSPage() {
                       )}
                       <div className="aspect-square bg-surface-50 dark:bg-surface-800 rounded-2xl mb-3 flex items-center justify-center overflow-hidden border border-surface-100 dark:border-surface-800 group-hover:border-brand-200 transition-colors">
                         {product.images?.[0] ? (
-                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          <img 
+                            src={product.images[0]} 
+                            alt={product.name} 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            onError={(e) => { e.target.src = 'https://placehold.co/400x400?text=No+Image'; }}
+                          />
                         ) : <HiOutlineArchiveBox className="text-4xl text-surface-200" />}
                       </div>
                       <p className="text-[12px] font-black text-surface-950 dark:text-white truncate tracking-tight">{product.name}</p>
@@ -371,11 +409,6 @@ export default function POSPage() {
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${product.totalStock <= 5 ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-500'}`}>
                           {product.totalStock}
                         </span>
-                      </div>
-                      <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={(e) => { e.stopPropagation(); openEdit(product); }} className="w-8 h-8 rounded-full bg-white dark:bg-surface-800 shadow-lg flex items-center justify-center text-surface-600 dark:text-surface-400 hover:text-brand-500 hover:scale-110 transition-all"><HiOutlinePencilSquare /></button>
-                        <button onClick={(e) => { e.stopPropagation(); duplicate(product); }} className="w-8 h-8 rounded-full bg-white dark:bg-surface-800 shadow-lg flex items-center justify-center text-surface-600 dark:text-surface-400 hover:text-blue-500 hover:scale-110 transition-all"><HiOutlineDocumentDuplicate /></button>
-                        <button onClick={(e) => { e.stopPropagation(); setDeleting(product._id); }} className="w-8 h-8 rounded-full bg-white dark:bg-surface-800 shadow-lg flex items-center justify-center text-surface-600 dark:text-surface-400 hover:text-red-500 hover:scale-110 transition-all"><HiOutlineTrash /></button>
                       </div>
                     </motion.div>
                   );
@@ -479,7 +512,14 @@ export default function POSPage() {
                 initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
                 className="flex gap-2.5 p-2.5 rounded-xl bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800">
                 <div className="w-10 h-10 rounded-lg bg-surface-200 dark:bg-surface-700 flex items-center justify-center text-lg shrink-0 overflow-hidden">
-                  {item.image ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" /> : <HiOutlineArchiveBox className="text-surface-400" />}
+                  {item.image ? (
+                    <img 
+                      src={item.image} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover" 
+                      onError={(e) => { e.target.src = 'https://placehold.co/100x100?text=N/A'; }}
+                    />
+                  ) : <HiOutlineArchiveBox className="text-surface-400" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-surface-800 dark:text-surface-200 truncate">{item.name}</p>
@@ -754,7 +794,7 @@ export default function POSPage() {
 
             <div className="flex gap-2">
               <button onClick={() => setShowReceipt(false)} className="btn-secondary flex-1 justify-center">New Sale</button>
-              <button onClick={printReceipt} className="btn-primary flex-1 justify-center">⬇ PDF Receipt</button>
+              <button onClick={() => printReceipt(completedOrder)} className="btn-primary flex-1 justify-center">⬇ PDF Receipt</button>
             </div>
           </div>
         )}

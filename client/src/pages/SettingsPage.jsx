@@ -16,12 +16,16 @@ import {
 } from 'react-icons/hi2';
 
 export default function SettingsPage() {
-  const { setSettings } = useSettings();
-  const [form, setForm] = useState(null);
+  const { settings, setSettings } = useSettings();
+  const [form, setForm] = useState(settings);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    settingsAPI.get().then(r => setForm(r.data.settings)).catch(console.error);
+    settingsAPI.get().then(r => {
+      const merged = { ...settings, ...r.data.settings };
+      setForm(merged);
+      setSettings(merged);
+    }).catch(console.error);
   }, []);
 
   const handleSave = async (e) => {
