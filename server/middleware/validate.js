@@ -20,13 +20,13 @@ const validate = (schema, source = 'body') => (req, res, next) => {
         return {
           field,
           message: issue.message,
+          code: issue.code,
         };
       });
 
-      // User-facing message: Use the first descriptive message
-      const primaryMessage = formattedErrors.length > 0
-        ? formattedErrors[0].message
-        : 'Invalid request data';
+      // Show exact field and message(s) clearly
+      const exactMessages = formattedErrors.map((err) => `${err.field}: ${err.message}`);
+      const primaryMessage = exactMessages.join(', ') || 'Validation failed';
 
       logger.warn(`Validation failed on ${req.method} ${req.originalUrl}: ${primaryMessage}`, {
         errors: formattedErrors,

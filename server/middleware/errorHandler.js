@@ -18,6 +18,25 @@ const errorHandler = (err, req, res, next) => {
     statusCode = 400;
   }
 
+  // Zod validation error
+  if (err.name === 'ZodError' || err.issues) {
+    const issues = err.issues || [];
+    const fieldErrors = {};
+    const formattedErrors = issues.map((issue) => {
+      const field = issue.path.join('.') || 'field';
+      if (!fieldErrors[field]) fieldErrors[field] = issue.message;
+      return { field, message: issue.message, code: issue.code };
+    });
+    message = formattedErrors.map(e => `${e.field}: ${e.message}`).join(', ') || 'Validation Error';
+    statusCode = 400;
+    return res.status(statusCode).json({
+      success: false,
+      message,
+      errors: formattedErrors,
+      fieldErrors,
+    });
+  }
+
   logger.error(`${statusCode} - ${message} - ${req.originalUrl} - ${req.method} - ${req.ip}`, {
     stack: err.stack,
     body: req.body,
