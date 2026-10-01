@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { FormError } from "../components/UI";
 import { loginSchema, validateWithZod } from "../utils/validation";
-import toast from "react-hot-toast";
-import { HiOutlineShoppingBag, HiOutlineArchiveBox } from "react-icons/hi2";
+import { toast } from "sonner";
+import { HiOutlineShoppingBag, HiOutlineArchiveBox, HiOutlineKey, HiOutlineShieldCheck } from "react-icons/hi2";
 
 export default function LoginPage() {
   const [form, setForm] = useState({
@@ -20,20 +20,20 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   const handle = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setGeneralError("");
     const validation = validateWithZod(loginSchema, form);
     if (!validation.success) {
       setErrors(validation.errors);
       setGeneralError(validation.firstMessage);
-      toast.error(validation.firstMessage);
+      toast.error("Validation Error", { description: validation.firstMessage });
       return;
     }
     setErrors({});
     setLoading(true);
     try {
       await login(form.email, form.password);
-      toast.success("Welcome back!");
+      toast.success("Welcome back!", { description: `Logged in as ${form.email}` });
       navigate("/dashboard");
     } catch (err) {
       if (err.response?.data?.fieldErrors) {
@@ -41,16 +41,28 @@ export default function LoginPage() {
       }
       const errorMsg = err.response?.data?.message || "Login failed. Please verify your credentials.";
       setGeneralError(errorMsg);
-      toast.error(errorMsg);
+      toast.error("Authentication Failed", { description: errorMsg });
     } finally {
       setLoading(false);
     }
   };
 
-  const demoLogin = (email, password) => {
+  const fillAdmin = () => {
+    setGeneralError("");
+    setErrors({});
+    setForm({ email: "admin@solemate.com", password: "admin123" });
+    toast.info("Admin credentials applied", {
+      description: "admin@solemate.com · admin123",
+    });
+  };
+
+  const demoLogin = (email, password, label) => {
     setGeneralError("");
     setErrors({});
     setForm({ email, password });
+    toast.info(`${label} credentials loaded`, {
+      description: email,
+    });
   };
 
   return (
@@ -225,34 +237,60 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo accounts */}
-          <div className="mt-8">
-            <p className="text-xs text-surface-400 uppercase font-bold tracking-widest text-center mb-3">
-              Demo accounts
-            </p>
-            <div className="grid grid-cols-3 gap-2">
+          {/* Default Admin Credentials Card */}
+          <div className="mt-8 p-4 rounded-2xl bg-surface-50 dark:bg-surface-900/60 border border-surface-200 dark:border-surface-800 backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center gap-2">
+                <span className="p-1 rounded-lg bg-brand-500/10 text-brand-500">
+                  <HiOutlineShieldCheck className="w-4 h-4" />
+                </span>
+                <span className="text-xs font-bold tracking-tight text-surface-900 dark:text-white uppercase">
+                  Default Admin Credentials
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={fillAdmin}
+                className="text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 underline underline-offset-2 flex items-center gap-1 transition-colors"
+              >
+                <HiOutlineKey className="w-3.5 h-3.5" />
+                Auto-fill Admin
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs bg-white dark:bg-surface-950 p-2.5 rounded-xl border border-surface-200/70 dark:border-surface-800/70 mb-3 font-mono">
+              <div>
+                <span className="text-surface-400 block text-[10px] uppercase font-sans font-semibold">Email</span>
+                <span className="text-surface-900 dark:text-surface-100 font-bold select-all">admin@solemate.com</span>
+              </div>
+              <div>
+                <span className="text-surface-400 block text-[10px] uppercase font-sans font-semibold">Password</span>
+                <span className="text-surface-900 dark:text-surface-100 font-bold select-all">admin123</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
               {[
                 {
-                  label: "Admin",
+                  label: "Super Admin",
                   email: "admin@solemate.com",
                   pass: "admin123",
-                  color:
-                    "text-brand-600 dark:text-brand-400 border-brand-200 dark:border-brand-800",
+                  color: "text-brand-600 dark:text-brand-400 border-brand-200 dark:border-brand-800 bg-brand-50/50 dark:bg-brand-950/30",
                 },
                 {
-                  label: "Staff",
+                  label: "Staff Cashier",
                   email: "staff@solemate.com",
                   pass: "staff123",
-                  color:
-                    "text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
+                  color: "text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/30",
                 },
               ].map((a) => (
                 <button
+                  type="button"
                   key={a.label}
-                  onClick={() => demoLogin(a.email, a.pass)}
-                  className={`py-2 rounded-xl border bg-white dark:bg-surface-900 text-xs font-bold transition-all hover:scale-105 ${a.color}`}
+                  onClick={() => demoLogin(a.email, a.pass, a.label)}
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all hover:scale-[1.02] flex items-center justify-center gap-1.5 ${a.color}`}
                 >
-                  {a.label}
+                  <span>{a.label}</span>
                 </button>
               ))}
             </div>

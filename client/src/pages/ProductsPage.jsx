@@ -4,7 +4,7 @@ import { productAPI, supplierAPI } from '../api';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { Modal, Badge, SearchInput, Pagination, Empty, LoadingPage, ConfirmDialog, Select } from '../components/UI';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { 
   HiOutlineSquares2X2, 
   HiOutlineTableCells, 

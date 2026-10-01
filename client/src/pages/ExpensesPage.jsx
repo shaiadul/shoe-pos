@@ -5,7 +5,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { Badge, LoadingPage, EmptyState, Pagination, Modal, StatCard, FormError } from '../components/UI';
 import { expenseSchema, validateWithZod } from '../utils/validation';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import {
   HiOutlineBanknotes,
   HiOutlinePlus,

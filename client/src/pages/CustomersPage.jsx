@@ -4,7 +4,7 @@ import { customerAPI, orderAPI } from '../api';
 import { useSettings } from '../context/SettingsContext';
 import { Modal, Badge, SearchInput, Pagination, Empty, LoadingPage, ConfirmDialog, FormError } from '../components/UI';
 import { customerSchema, validateWithZod } from '../utils/validation';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { 
   HiOutlineUser, 

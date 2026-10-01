@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from 'sonner';
 import { AuthProvider } from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { SettingsProvider } from './context/SettingsContext';
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
@@ -18,16 +18,34 @@ import UsersPage from './pages/UsersPage';
 import ActivityLogPage from './pages/ActivityLogPage';
 import ExpensesPage from './pages/ExpensesPage';
 
+function ThemedToaster() {
+  const { dark } = useTheme();
+  return (
+    <Toaster
+      theme={dark ? 'dark' : 'light'}
+      position="top-right"
+      richColors
+      closeButton
+      duration={3500}
+      toastOptions={{
+        style: {
+          borderRadius: '14px',
+          padding: '12px 16px',
+          fontSize: '13px',
+          fontWeight: '500',
+        },
+      }}
+    />
+  );
+}
+
 export default function App() {
   return (
     <ThemeProvider>
+      <ThemedToaster />
       <AuthProvider>
         <SettingsProvider>
           <BrowserRouter>
-            <Toaster position="top-right" toastOptions={{
-              style: { fontFamily: 'inherit', fontSize: '14px', borderRadius: '12px', fontWeight: '500' },
-              success: { iconTheme: { primary: '#ec4899', secondary: '#fff' } },
-            }} />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>

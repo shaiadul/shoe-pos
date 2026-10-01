@@ -3,7 +3,7 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { dashboardAPI } from '../api';
 import { useSettings } from '../context/SettingsContext';
 import { LoadingPage, StatCard } from '../components/UI';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { HiOutlineBanknotes, HiOutlineShoppingCart, HiOutlinePresentationChartLine, HiOutlineTrophy } from 'react-icons/hi2';
 
 const CustomTooltip = ({ active, payload, label, fmt }) => {

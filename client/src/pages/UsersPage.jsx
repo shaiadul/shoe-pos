@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { authAPI } from '../api';
 import { Modal, Badge, Empty, LoadingPage, ConfirmDialog, SearchInput, Select } from '../components/UI';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { 

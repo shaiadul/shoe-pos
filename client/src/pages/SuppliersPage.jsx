@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supplierAPI, productAPI } from '../api';
 import { Modal, Badge, SearchInput, Pagination, Empty, LoadingPage, ConfirmDialog } from '../components/UI';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { 
   HiOutlineTruck, 
   HiOutlinePhone, 

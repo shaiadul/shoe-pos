@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { activityAPI } from '../api';
 import { Badge, LoadingPage, EmptyState, Pagination, Modal, StatCard } from '../components/UI';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import {
   HiOutlineShieldCheck,
   HiOutlineArrowPath,

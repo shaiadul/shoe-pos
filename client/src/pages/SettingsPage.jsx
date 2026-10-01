@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { settingsAPI } from '../api';
 import { LoadingPage } from '../components/UI';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useSettings } from '../context/SettingsContext';
 import { 
   HiOutlineBuildingStorefront, 
