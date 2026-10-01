@@ -303,10 +303,14 @@ export default function OrdersPage() {
               {can(['admin']) && selected.status === 'completed' && (
                 <button onClick={async () => { 
                   if(window.confirm('Mark this order as refunded?')) {
-                    await orderAPI.updateStatus(selected._id, 'refunded'); 
-                    toast.success('Marked as refunded'); 
-                    setSelected(null); 
-                    load(page); 
+                    try {
+                      await orderAPI.updateStatus(selected._id, 'refunded'); 
+                      toast.success('Marked as refunded'); 
+                      setSelected(null); 
+                      load(page); 
+                    } catch (err) {
+                      toast.error(err.response?.data?.message || 'Failed to refund order');
+                    }
                   }
                 }}
                   className="btn-secondary text-xs font-bold text-red-500">Refund Order</button>

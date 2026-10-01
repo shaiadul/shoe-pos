@@ -53,7 +53,7 @@ export default function UsersPage() {
 
   const handleDelete = async (id) => {
     try { await authAPI.deleteUser(id); toast.success('User deleted'); load(); }
-    catch { toast.error('Delete failed'); }
+    catch (err) { toast.error(err.response?.data?.message || 'Delete failed'); }
   };
 
   const toggleActive = async (u) => {
@@ -61,7 +61,7 @@ export default function UsersPage() {
       await authAPI.updateUser(u._id, { isActive: !u.isActive });
       toast.success(u.isActive ? 'User deactivated' : 'User activated');
       load();
-    } catch { toast.error('Update failed'); }
+    } catch (err) { toast.error(err.response?.data?.message || 'Update failed'); }
   };
 
   return (

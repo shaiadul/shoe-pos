@@ -13,6 +13,7 @@ export default function LoginPage() {
     password: "admin123",
   });
   const [errors, setErrors] = useState({});
+  const [generalError, setGeneralError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const { login } = useAuth();
@@ -20,9 +21,11 @@ export default function LoginPage() {
 
   const handle = async (e) => {
     e.preventDefault();
+    setGeneralError("");
     const validation = validateWithZod(loginSchema, form);
     if (!validation.success) {
       setErrors(validation.errors);
+      setGeneralError(validation.firstMessage);
       toast.error(validation.firstMessage);
       return;
     }
@@ -36,13 +39,19 @@ export default function LoginPage() {
       if (err.response?.data?.fieldErrors) {
         setErrors(err.response.data.fieldErrors);
       }
-      toast.error(err.response?.data?.message || "Login failed");
+      const errorMsg = err.response?.data?.message || "Login failed. Please verify your credentials.";
+      setGeneralError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
-  const demoLogin = (email, password) => setForm({ email, password });
+  const demoLogin = (email, password) => {
+    setGeneralError("");
+    setErrors({});
+    setForm({ email, password });
+  };
 
   return (
     <div className="min-h-screen flex bg-[var(--bg-primary)]">
@@ -148,6 +157,17 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handle} className="space-y-4">
+            {generalError && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2.5 shadow-sm"
+              >
+                <span className="text-base leading-none">⚠️</span>
+                <span className="flex-1">{generalError}</span>
+              </motion.div>
+            )}
+
             <div>
               <label className="label">Email address</label>
               <input

@@ -70,7 +70,7 @@ export default function SuppliersPage() {
 
   const handleDelete = async (id) => {
     try { await supplierAPI.delete(id); toast.success('Supplier deleted'); load(page); }
-    catch { toast.error('Delete failed'); }
+    catch (err) { toast.error(err.response?.data?.message || 'Delete failed'); }
   };
 
   return (

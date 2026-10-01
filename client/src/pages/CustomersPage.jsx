@@ -114,7 +114,7 @@ export default function CustomersPage() {
 
   const handleDelete = async (id) => {
     try { await customerAPI.delete(id); toast.success('Customer deleted'); load(page); loadDueSummary(); }
-    catch { toast.error('Delete failed'); }
+    catch (err) { toast.error(err.response?.data?.message || 'Delete failed'); }
   };
 
   const openPayDue = (c, e) => {

@@ -34,29 +34,54 @@ exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ success: false, message: 'Please provide email and password' });
+    
     const user = await User.findOne({ email }).select('+password');
-    if (!user || !user.isActive) {
+    if (!user) {
       logActivity({
         action: 'LOGIN_FAILED',
-        description: `Failed login attempt for ${email}`,
+        description: `Failed login: No account found for ${email}`,
         entityType: 'Auth',
-        metadata: { email, reason: !user ? 'User not found' : 'Account deactivated' },
+        metadata: { email, reason: 'User not found' },
         ip: req.ip,
       });
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        message: 'No account registered with this email address.',
+        fieldErrors: { email: 'No account registered with this email' },
+      });
     }
+
+    if (!user.isActive) {
+      logActivity({
+        action: 'LOGIN_FAILED',
+        description: `Failed login: Deactivated account for ${email}`,
+        entityType: 'Auth',
+        metadata: { email, reason: 'Account deactivated' },
+        ip: req.ip,
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been deactivated. Please contact an administrator.',
+        fieldErrors: { email: 'Account is deactivated' },
+      });
+    }
+
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       logActivity({
         action: 'LOGIN_FAILED',
-        description: `Failed login password attempt for ${email}`,
+        description: `Failed login: Incorrect password for ${email}`,
         user,
         entityType: 'Auth',
         entityId: user._id,
         metadata: { email, reason: 'Incorrect password' },
         ip: req.ip,
       });
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        message: 'Incorrect password. Please verify and try again.',
+        fieldErrors: { password: 'Incorrect password' },
+      });
     }
     user.lastLogin = new Date();
     await user.save({ validateBeforeSave: false });

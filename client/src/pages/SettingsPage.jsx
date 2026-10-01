@@ -34,7 +34,7 @@ export default function SettingsPage() {
       const r = await settingsAPI.update(form);
       setSettings(r.data.settings);
       toast.success('Settings saved!');
-    } catch { toast.error('Save failed'); }
+    } catch (err) { toast.error(err.response?.data?.message || 'Save failed'); }
     finally { setSaving(false); }
   };
 
