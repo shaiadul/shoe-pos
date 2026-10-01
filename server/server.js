@@ -71,4 +71,14 @@ app.get('/api/health', (req, res) => res.json({ status: 'OK', timestamp: new Dat
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    logger.error(`❌ Port ${PORT} is already in use! The server is already running in another terminal or process.`);
+  } else {
+    logger.error(`❌ Server error: ${err.message}`);
+  }
+  process.exit(1);
+});
+
 server.listen(PORT, () => logger.info(`🚀 Server running on port ${PORT}`));
