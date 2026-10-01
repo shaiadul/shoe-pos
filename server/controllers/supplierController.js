@@ -1,5 +1,6 @@
 const Supplier = require('../models/Supplier');
 const Product = require('../models/Product');
+const logActivity = require('../utils/logActivity');
 
 exports.getSuppliers = async (req, res, next) => {
   try {
@@ -24,6 +25,17 @@ exports.getSupplier = async (req, res, next) => {
 exports.createSupplier = async (req, res, next) => {
   try {
     const supplier = await Supplier.create(req.body);
+
+    logActivity({
+      action: 'SUPPLIER_CREATED',
+      description: `Added supplier "${supplier.name}" (${supplier.company || 'Individual'})`,
+      user: req.user,
+      entityType: 'Supplier',
+      entityId: supplier._id,
+      metadata: { company: supplier.company, phone: supplier.phone },
+      ip: req.ip,
+    });
+
     res.status(201).json({ success: true, supplier });
   } catch (err) { next(err); }
 };
@@ -32,13 +44,35 @@ exports.updateSupplier = async (req, res, next) => {
   try {
     const supplier = await Supplier.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!supplier) return res.status(404).json({ success: false, message: 'Supplier not found' });
+
+    logActivity({
+      action: 'SUPPLIER_UPDATED',
+      description: `Updated supplier details for "${supplier.name}"`,
+      user: req.user,
+      entityType: 'Supplier',
+      entityId: supplier._id,
+      ip: req.ip,
+    });
+
     res.json({ success: true, supplier });
   } catch (err) { next(err); }
 };
 
 exports.deleteSupplier = async (req, res, next) => {
   try {
-    await Supplier.findByIdAndUpdate(req.params.id, { isActive: false });
+    const supplier = await Supplier.findByIdAndUpdate(req.params.id, { isActive: false });
+
+    if (supplier) {
+      logActivity({
+        action: 'SUPPLIER_DELETED',
+        description: `Deactivated supplier "${supplier.name}"`,
+        user: req.user,
+        entityType: 'Supplier',
+        entityId: supplier._id,
+        ip: req.ip,
+      });
+    }
+
     res.json({ success: true, message: 'Supplier deleted' });
   } catch (err) { next(err); }
 };
@@ -63,6 +97,17 @@ exports.addPurchase = async (req, res, next) => {
     }
 
     await supplier.save();
+
+    logActivity({
+      action: 'SUPPLIER_PURCHASE',
+      description: `Recorded purchase order #${invoiceNumber || 'PO'} from "${supplier.name}" for $${totalAmount}`,
+      user: req.user,
+      entityType: 'Supplier',
+      entityId: supplier._id,
+      metadata: { invoiceNumber, totalAmount, itemCount: items?.length },
+      ip: req.ip,
+    });
+
     res.json({ success: true, supplier });
   } catch (err) { next(err); }
 };

@@ -39,6 +39,7 @@ export const authAPI = {
 export const productAPI = {
   getAll: (params) => api.get('/products', { params }),
   getOne: (id) => api.get(`/products/${id}`),
+  getByBarcode: (barcode) => api.get(`/products/barcode/${barcode}`),
   create: (data) => api.post('/products', data),
   update: (id, data) => api.put(`/products/${id}`, data),
   delete: (id) => api.delete(`/products/${id}`),
@@ -90,6 +91,22 @@ export const dashboardAPI = {
 export const settingsAPI = {
   get: () => api.get('/settings'),
   update: (data) => api.put('/settings', data),
+};
+
+// Activity Audit Log
+export const activityAPI = {
+  getAll: (params) => api.get('/activity', { params }),
+  getStats: () => api.get('/activity/stats'),
+};
+
+// Expenses
+export const expenseAPI = {
+  getAll: (params) => api.get('/expenses', { params }),
+  getSummary: () => api.get('/expenses/summary'),
+  getOne: (id) => api.get(`/expenses/${id}`),
+  create: (data) => api.post('/expenses', data),
+  update: (id, data) => api.put(`/expenses/${id}`, data),
+  delete: (id) => api.delete(`/expenses/${id}`),
 };
 
 export default api;

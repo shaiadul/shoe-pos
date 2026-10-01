@@ -1,11 +1,20 @@
+import { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 
 const pageTitles = {
-  '/dashboard': 'Dashboard', '/pos': 'Point of Sale', '/products': 'Products',
-  '/orders': 'Orders', '/customers': 'Customers', '/suppliers': 'Suppliers',
-  '/reports': 'Reports', '/settings': 'Settings', '/users': 'Users',
+  '/dashboard': 'Dashboard',
+  '/pos': 'Point of Sale',
+  '/products': 'Products & Inventory',
+  '/orders': 'Sales Orders',
+  '/expenses': 'Expense Management',
+  '/customers': 'Customers & Loyalty',
+  '/suppliers': 'Suppliers & Purchases',
+  '/reports': 'Analytics & Reports',
+  '/activity-log': 'Audit & Activity Log',
+  '/settings': 'System Settings',
+  '/users': 'Staff Management',
 };
 
 export default function Topbar({ onMenuToggle }) {
@@ -13,9 +22,16 @@ export default function Topbar({ onMenuToggle }) {
   const { user } = useAuth();
   const location = useLocation();
   const title = pageTitles[location.pathname] || 'SoleMate POS';
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const timeStr = currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const dateStr = currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
   return (
     <header className="h-14 flex items-center px-4 gap-4 border-b border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-950 shrink-0">
@@ -31,8 +47,9 @@ export default function Topbar({ onMenuToggle }) {
       <h1 className="font-extrabold text-surface-900 dark:text-white text-lg">{title}</h1>
 
       <div className="ml-auto flex items-center gap-2">
-        {/* Date/time */}
-        <div className="hidden sm:flex items-center gap-1.5 text-xs text-surface-500 dark:text-surface-400 font-mono bg-surface-100 dark:bg-surface-800 px-3 py-1.5 rounded-lg">
+        {/* Date/time with live seconds */}
+        <div className="hidden sm:flex items-center gap-2 text-xs text-surface-500 dark:text-surface-400 font-mono bg-surface-100 dark:bg-surface-800 px-3 py-1.5 rounded-lg border border-surface-200/50 dark:border-surface-700/50">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>{dateStr}</span>
           <span className="text-surface-300 dark:text-surface-600">·</span>
           <span className="text-brand-500 font-semibold">{timeStr}</span>

@@ -1,3 +1,5 @@
+const logger = require('../utils/logger');
+
 const errorHandler = (err, req, res, next) => {
   let statusCode = err.statusCode || 500;
   let message = err.message || 'Server Error';
@@ -16,7 +18,13 @@ const errorHandler = (err, req, res, next) => {
     statusCode = 400;
   }
 
-  if (process.env.NODE_ENV === 'development') console.error('Error:', err);
+  logger.error(`${statusCode} - ${message} - ${req.originalUrl} - ${req.method} - ${req.ip}`, {
+    stack: err.stack,
+    body: req.body,
+    params: req.params,
+    query: req.query,
+  });
+
   res.status(statusCode).json({ success: false, message, ...(process.env.NODE_ENV === 'development' && { stack: err.stack }) });
 };
 

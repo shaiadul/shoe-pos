@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Customer = require('../models/Customer');
+const Expense = require('../models/Expense');
 
 exports.getDashboard = async (req, res, next) => {
   try {
@@ -10,7 +11,7 @@ exports.getDashboard = async (req, res, next) => {
     const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
     const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
 
-    const [todayStats, yesterdayStats, monthStats, lastMonthStats, totalProducts, totalCustomers, lowStockCount, dueStats] = await Promise.all([
+    const [todayStats, yesterdayStats, monthStats, lastMonthStats, totalProducts, totalCustomers, lowStockCount, dueStats, todayExpenseAgg, monthExpenseAgg] = await Promise.all([
       Order.aggregate([{ $match: { createdAt: { $gte: today }, status: 'completed' } }, { $group: { _id: null, total: { $sum: '$paidAmount' }, due: { $sum: '$dueAmount' }, count: { $sum: 1 } } }]),
       Order.aggregate([{ $match: { createdAt: { $gte: yesterday, $lt: today }, status: 'completed' } }, { $group: { _id: null, total: { $sum: '$paidAmount' }, count: { $sum: 1 } } }]),
       Order.aggregate([{ $match: { createdAt: { $gte: thisMonth }, status: 'completed' } }, { $group: { _id: null, total: { $sum: '$paidAmount' }, due: { $sum: '$dueAmount' }, count: { $sum: 1 } } }]),
@@ -19,12 +20,19 @@ exports.getDashboard = async (req, res, next) => {
       Customer.countDocuments({ isActive: true }),
       Product.countDocuments({ isActive: true, $expr: { $lte: ['$totalStock', '$lowStockThreshold'] } }),
       Customer.aggregate([{ $match: { isActive: true, dueBalance: { $gt: 0 } } }, { $group: { _id: null, totalDue: { $sum: '$dueBalance' }, count: { $sum: 1 } } }]),
+      Expense.aggregate([{ $match: { date: { $gte: today } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      Expense.aggregate([{ $match: { date: { $gte: thisMonth } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
     ]);
 
     const todayRevenue = todayStats[0]?.total || 0;
     const yesterdayRevenue = yesterdayStats[0]?.total || 0;
     const monthRevenue = monthStats[0]?.total || 0;
     const lastMonthRevenue = lastMonthStats[0]?.total || 0;
+    const todayExpenses = todayExpenseAgg[0]?.total || 0;
+    const monthExpenses = monthExpenseAgg[0]?.total || 0;
+    const netProfitToday = todayRevenue - todayExpenses;
+    const netProfitMonth = monthRevenue - monthExpenses;
+    const profitMarginMonth = monthRevenue > 0 ? (((monthRevenue - monthExpenses) / monthRevenue) * 100).toFixed(1) : 0;
 
     const last7Days = await Order.aggregate([
       { $match: { createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, status: 'completed' } },
@@ -61,6 +69,9 @@ exports.getDashboard = async (req, res, next) => {
         monthGrowth: lastMonthRevenue > 0 ? ((monthRevenue - lastMonthRevenue) / lastMonthRevenue * 100).toFixed(1) : 0,
         monthSales: monthStats[0]?.count || 0,
         monthDue: monthStats[0]?.due || 0,
+        todayExpenses, monthExpenses,
+        netProfitToday, netProfitMonth,
+        profitMarginMonth,
         totalProducts, totalCustomers, lowStockCount,
         totalOutstandingDue: dueStats[0]?.totalDue || 0,
         customersWithDue: dueStats[0]?.count || 0,

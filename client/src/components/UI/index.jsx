@@ -67,23 +67,29 @@ export function LoadingPage() {
 }
 
 /* ── Empty state ───────────────────────────────────── */
-export function Empty({ icon = '◎', title = 'No data found', subtitle = '', action }) {
+export function Empty({ icon = '◎', title = 'No data found', subtitle = '', description = '', action }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
       <div className="text-5xl mb-4 opacity-30">{icon}</div>
       <p className="font-bold text-surface-600 dark:text-surface-400 text-lg mb-1">{title}</p>
-      {subtitle && <p className="text-sm text-surface-400 mb-4">{subtitle}</p>}
+      {(subtitle || description) && <p className="text-sm text-surface-400 mb-4">{subtitle || description}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>
   );
 }
 
+export { Empty as EmptyState };
+
 /* ── Pagination ────────────────────────────────────── */
-export function Pagination({ page, pages, total, onPage }) {
-  if (pages <= 1) return null;
+export function Pagination({ page, pages, total, onPage, currentPage, totalPages, onPageChange }) {
+  const curPage = currentPage !== undefined ? currentPage : page;
+  const totPages = totalPages !== undefined ? totalPages : pages;
+  const handlePage = onPageChange || onPage;
+
+  if (!totPages || totPages <= 1) return null;
   const items = [];
-  for (let i = 1; i <= pages; i++) {
-    if (i === 1 || i === pages || (i >= page - 1 && i <= page + 1)) {
+  for (let i = 1; i <= totPages; i++) {
+    if (i === 1 || i === totPages || (i >= curPage - 1 && i <= curPage + 1)) {
       items.push(i);
     } else if (items[items.length - 1] !== '…') {
       items.push('…');
@@ -91,21 +97,21 @@ export function Pagination({ page, pages, total, onPage }) {
   }
   return (
     <div className="flex items-center justify-between px-4 py-3 border-t border-surface-100 dark:border-surface-800">
-      <p className="text-xs text-surface-400">Page {page} of {pages} · {total} total</p>
+      <p className="text-xs text-surface-400">Page {curPage} of {totPages}{total ? ` · ${total} total` : ''}</p>
       <div className="flex items-center gap-1">
-        <button onClick={() => onPage(page - 1)} disabled={page <= 1}
+        <button onClick={() => handlePage && handlePage(curPage - 1)} disabled={curPage <= 1}
           className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
           ‹ Prev
         </button>
         {items.map((item, i) => item === '…' ? (
           <span key={i} className="px-1 text-xs text-surface-400">…</span>
         ) : (
-          <button key={i} onClick={() => onPage(item)}
-            className={`w-7 h-7 rounded-lg text-xs font-bold transition-colors ${item === page ? 'bg-brand-500 text-white' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'}`}>
+          <button key={i} onClick={() => handlePage && handlePage(item)}
+            className={`w-7 h-7 rounded-lg text-xs font-bold transition-colors ${item === curPage ? 'bg-brand-500 text-white' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800'}`}>
             {item}
           </button>
         ))}
-        <button onClick={() => onPage(page + 1)} disabled={page >= pages}
+        <button onClick={() => handlePage && handlePage(curPage + 1)} disabled={curPage >= totPages}
           className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
           Next ›
         </button>
@@ -162,13 +168,14 @@ export function StatCard({ title, value, icon, trend, trendLabel, color = 'brand
 }
 
 /* ── Search Input ──────────────────────────────────── */
-export function SearchInput({ value, onChange, placeholder = 'Search…', icon }) {
+export function SearchInput({ value, onChange, placeholder = 'Search…', icon, inputRef }) {
   return (
     <div className="relative group">
       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 transition-colors group-focus-within:text-brand-500">
         {icon || '⌕'}
       </span>
       <input
+        ref={inputRef}
         value={value} onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         className="input pl-11 pr-11 bg-surface-50/50 border-surface-200/60 focus:bg-white"
@@ -228,5 +235,21 @@ export function SkeletonGrid({ count = 8, className = '' }) {
         </div>
       ))}
     </div>
+  );
+}
+
+/* ── Form Field Error ───────────────────────────────── */
+export function FormError({ message }) {
+  if (!message) return null;
+  return (
+    <motion.p
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1"
+    >
+      <span>⚠</span>
+      <span>{message}</span>
+    </motion.p>
   );
 }

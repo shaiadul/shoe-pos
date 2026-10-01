@@ -87,27 +87,29 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { label: 'New Sale', icon: <HiOutlinePlusCircle />, path: '/pos', color: 'bg-brand-500 shadow-brand-500/20' },
           { label: 'Add Product', icon: <HiOutlineArchiveBox />, path: '/products', color: 'bg-blue-500 shadow-blue-500/20' },
           { label: 'Add Customer', icon: <HiOutlineUserPlus />, path: '/customers', color: 'bg-purple-500 shadow-purple-500/20' },
-          { label: 'View Reports', icon: <HiOutlineDocumentChartBar />, path: '/reports', color: 'bg-emerald-500 shadow-emerald-500/20' },
+          { label: 'Expenses', icon: <HiOutlineBanknotes />, path: '/expenses', color: 'bg-amber-500 shadow-amber-500/20' },
+          { label: 'Sales Reports', icon: <HiOutlineDocumentChartBar />, path: '/reports', color: 'bg-emerald-500 shadow-emerald-500/20' },
+          { label: 'Audit Trail', icon: <HiOutlineQueueList />, path: '/activity-log', color: 'bg-indigo-500 shadow-indigo-500/20' },
         ].map((action, i) => (
           <motion.button
             key={i}
-            whileHover={{ y: -4, scale: 1.02 }}
+            whileHover={{ y: -3, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => window.location.href = action.path}
-            className={`flex items-center gap-3 p-4 rounded-2xl text-white shadow-lg transition-all ${action.color}`}
+            className={`flex items-center gap-2.5 p-3.5 rounded-2xl text-white shadow-lg transition-all ${action.color}`}
           >
-            <span className="text-2xl">{action.icon}</span>
-            <span className="font-bold text-sm">{action.label}</span>
+            <span className="text-xl shrink-0">{action.icon}</span>
+            <span className="font-bold text-xs truncate">{action.label}</span>
           </motion.button>
         ))}
       </div>
 
-      {/* Stat cards */}
+      {/* Primary Stat cards */}
       <motion.div variants={container} initial="hidden" animate="show"
         className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div variants={item}>
@@ -127,6 +129,47 @@ export default function DashboardPage() {
         <motion.div variants={item}>
           <StatCard title="Low Stock Items" value={stats?.lowStockCount || 0}
             icon={<HiOutlineExclamationTriangle />} color={stats?.lowStockCount > 0 ? 'red' : 'green'} sub="Need restocking" />
+        </motion.div>
+      </motion.div>
+
+      {/* Financial Health & Profit Margins */}
+      <motion.div variants={container} initial="hidden" animate="show"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.div variants={item}>
+          <StatCard
+            title="Net Profit (Month)"
+            value={fmt(stats?.netProfitMonth || 0)}
+            icon={<HiOutlinePresentationChartLine />}
+            color="emerald"
+            sub={stats?.profitMarginMonth ? `${stats.profitMarginMonth}% profit margin` : 'Revenue minus expenses'}
+          />
+        </motion.div>
+        <motion.div variants={item}>
+          <StatCard
+            title="Store Expenses (Month)"
+            value={fmt(stats?.monthExpenses || 0)}
+            icon={<HiOutlineBanknotes />}
+            color="purple"
+            sub={`Today: ${fmt(stats?.todayExpenses || 0)}`}
+          />
+        </motion.div>
+        <motion.div variants={item}>
+          <StatCard
+            title="Customer Due Balance"
+            value={fmt(stats?.totalOutstandingDue || 0)}
+            icon={<HiOutlineUserGroup />}
+            color={stats?.totalOutstandingDue > 0 ? 'yellow' : 'green'}
+            sub={`${stats?.customersWithDue || 0} customer(s) with due`}
+          />
+        </motion.div>
+        <motion.div variants={item}>
+          <StatCard
+            title="Today Net Profit"
+            value={fmt(stats?.netProfitToday || 0)}
+            icon={<HiOutlineBanknotes />}
+            color="brand"
+            sub={`Sales: ${fmt(stats?.todayRevenue || 0)}`}
+          />
         </motion.div>
       </motion.div>
 

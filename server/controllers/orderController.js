@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Customer = require('../models/Customer');
+const logActivity = require('../utils/logActivity');
 
 exports.getOrders = async (req, res, next) => {
   try {
@@ -83,6 +84,24 @@ exports.createOrder = async (req, res, next) => {
 
     const populated = await Order.findById(order._id).populate('customer', 'name phone dueBalance').populate('cashier', 'name');
     req.app.get('io').emit('newOrder', populated);
+
+    logActivity({
+      action: 'ORDER_CREATED',
+      description: `Completed order #${populated.orderNumber} for $${populated.total.toFixed(2)} (${populated.customerName})`,
+      user: req.user,
+      entityType: 'Order',
+      entityId: populated._id,
+      metadata: {
+        orderNumber: populated.orderNumber,
+        total: populated.total,
+        paidAmount: populated.paidAmount,
+        dueAmount: populated.dueAmount,
+        paymentMethod: populated.paymentMethod,
+        itemCount: populated.items?.length,
+      },
+      ip: req.ip,
+    });
+
     res.status(201).json({ success: true, order: populated });
   } catch (err) { next(err); }
 };
@@ -93,6 +112,18 @@ exports.updateOrderStatus = async (req, res, next) => {
     const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
     req.app.get('io').emit('orderUpdated', order);
+
+    const action = status === 'refunded' ? 'ORDER_REFUNDED' : status === 'cancelled' ? 'ORDER_CANCELLED' : 'ORDER_CREATED';
+    logActivity({
+      action,
+      description: `Order #${order.orderNumber} status changed to "${status}"`,
+      user: req.user,
+      entityType: 'Order',
+      entityId: order._id,
+      metadata: { status, orderNumber: order.orderNumber },
+      ip: req.ip,
+    });
+
     res.json({ success: true, order });
   } catch (err) { next(err); }
 };

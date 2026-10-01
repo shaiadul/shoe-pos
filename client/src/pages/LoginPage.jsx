@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
+import { FormError } from "../components/UI";
+import { loginSchema, validateWithZod } from "../utils/validation";
 import toast from "react-hot-toast";
 import { HiOutlineShoppingBag, HiOutlineArchiveBox } from "react-icons/hi2";
 
@@ -10,6 +12,7 @@ export default function LoginPage() {
     email: "admin@solemate.com",
     password: "admin123",
   });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const { login } = useAuth();
@@ -17,12 +20,22 @@ export default function LoginPage() {
 
   const handle = async (e) => {
     e.preventDefault();
+    const validation = validateWithZod(loginSchema, form);
+    if (!validation.success) {
+      setErrors(validation.errors);
+      toast.error(validation.firstMessage);
+      return;
+    }
+    setErrors({});
     setLoading(true);
     try {
       await login(form.email, form.password);
       toast.success("Welcome back!");
       navigate("/dashboard");
     } catch (err) {
+      if (err.response?.data?.fieldErrors) {
+        setErrors(err.response.data.fieldErrors);
+      }
       toast.error(err.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
@@ -139,14 +152,15 @@ export default function LoginPage() {
               <label className="label">Email address</label>
               <input
                 type="email"
-                required
                 value={form.email}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, email: e.target.value }))
-                }
-                className="input"
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, email: e.target.value }));
+                  if (errors.email) setErrors((err) => ({ ...err, email: undefined }));
+                }}
+                className={`input ${errors.email ? 'border-rose-500 focus:border-rose-500' : ''}`}
                 placeholder="you@solemate.com"
               />
+              <FormError message={errors.email} />
             </div>
 
             <div>
@@ -154,12 +168,12 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   type={showPw ? "text" : "password"}
-                  required
                   value={form.password}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, password: e.target.value }))
-                  }
-                  className="input pr-10"
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, password: e.target.value }));
+                    if (errors.password) setErrors((err) => ({ ...err, password: undefined }));
+                  }}
+                  className={`input pr-10 ${errors.password ? 'border-rose-500 focus:border-rose-500' : ''}`}
                   placeholder="••••••••"
                 />
                 <button
@@ -170,6 +184,7 @@ export default function LoginPage() {
                   {showPw ? "🙈" : "👁"}
                 </button>
               </div>
+              <FormError message={errors.password} />
             </div>
 
             <button

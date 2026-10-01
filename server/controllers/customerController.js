@@ -1,5 +1,6 @@
 const Customer = require('../models/Customer');
 const Order = require('../models/Order');
+const logActivity = require('../utils/logActivity');
 
 exports.getCustomers = async (req, res, next) => {
   try {
@@ -29,6 +30,17 @@ exports.getCustomer = async (req, res, next) => {
 exports.createCustomer = async (req, res, next) => {
   try {
     const customer = await Customer.create(req.body);
+
+    logActivity({
+      action: 'CUSTOMER_CREATED',
+      description: `Added new customer "${customer.name}" (${customer.phone})`,
+      user: req.user,
+      entityType: 'Customer',
+      entityId: customer._id,
+      metadata: { phone: customer.phone, email: customer.email },
+      ip: req.ip,
+    });
+
     res.status(201).json({ success: true, customer });
   } catch (err) { next(err); }
 };
@@ -37,13 +49,36 @@ exports.updateCustomer = async (req, res, next) => {
   try {
     const customer = await Customer.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+
+    logActivity({
+      action: 'CUSTOMER_UPDATED',
+      description: `Updated customer profile for "${customer.name}"`,
+      user: req.user,
+      entityType: 'Customer',
+      entityId: customer._id,
+      metadata: { changes: Object.keys(req.body) },
+      ip: req.ip,
+    });
+
     res.json({ success: true, customer });
   } catch (err) { next(err); }
 };
 
 exports.deleteCustomer = async (req, res, next) => {
   try {
-    await Customer.findByIdAndUpdate(req.params.id, { isActive: false });
+    const customer = await Customer.findByIdAndUpdate(req.params.id, { isActive: false });
+
+    if (customer) {
+      logActivity({
+        action: 'CUSTOMER_DELETED',
+        description: `Deactivated customer "${customer.name}"`,
+        user: req.user,
+        entityType: 'Customer',
+        entityId: customer._id,
+        ip: req.ip,
+      });
+    }
+
     res.json({ success: true, message: 'Customer deleted' });
   } catch (err) { next(err); }
 };
@@ -84,6 +119,16 @@ exports.payDue = async (req, res, next) => {
 
     // Emit real-time update
     req.app.get('io').emit('duePayment', { customerId: customer._id, dueBalance: customer.dueBalance, paidAmount: payAmount });
+
+    logActivity({
+      action: 'CUSTOMER_DUE_PAID',
+      description: `Collected due payment of $${payAmount.toFixed(2)} from "${customer.name}". Remaining due: $${customer.dueBalance.toFixed(2)}`,
+      user: req.user,
+      entityType: 'Customer',
+      entityId: customer._id,
+      metadata: { paidAmount: payAmount, remainingDue: customer.dueBalance, note },
+      ip: req.ip,
+    });
 
     res.json({ success: true, customer, message: `Due payment of ${payAmount} recorded.` });
   } catch (err) { next(err); }

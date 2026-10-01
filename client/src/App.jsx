@@ -15,6 +15,8 @@ import SuppliersPage from './pages/SuppliersPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import UsersPage from './pages/UsersPage';
+import ActivityLogPage from './pages/ActivityLogPage';
+import ExpensesPage from './pages/ExpensesPage';
 
 export default function App() {
   return (
@@ -34,9 +36,11 @@ export default function App() {
                 <Route path="/pos" element={<POSPage />} />
                 <Route path="/products" element={<ProductsPage />} />
                 <Route path="/orders" element={<OrdersPage />} />
+                <Route path="/expenses" element={<ExpensesPage />} />
                 <Route path="/customers" element={<CustomersPage />} />
                 <Route path="/suppliers" element={<SuppliersPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/activity-log" element={<ActivityLogPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/users" element={<UsersPage />} />
               </Route>

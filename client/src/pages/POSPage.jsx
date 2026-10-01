@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { productAPI, customerAPI, orderAPI } from '../api';
 import { useSettings } from '../context/SettingsContext';
@@ -27,7 +27,11 @@ import {
   HiOutlinePencilSquare, 
   HiOutlineDocumentDuplicate, 
   HiOutlineArchiveBox,
-  HiOutlineShoppingBag
+  HiOutlineShoppingBag,
+  HiOutlineQrCode,
+  HiOutlinePause,
+  HiOutlineBookmark,
+  HiOutlineClock
 } from 'react-icons/hi2';
 
 const PAYMENT_METHODS = [
@@ -43,15 +47,29 @@ export default function POSPage() {
   const { user, can } = useAuth();
   const navigate = useNavigate();
 
+  const searchRef = useRef(null);
+  const barcodeInputRef = useRef(null);
+
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [cart, setCart] = useState([]);
   const [search, setSearch] = useState('');
+  const [barcodeInput, setBarcodeInput] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Held carts
+  const [heldCarts, setHeldCarts] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('pos_held_carts') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [showRecallModal, setShowRecallModal] = useState(false);
 
   // Customer
   const [customer, setCustomer] = useState(null);
@@ -161,6 +179,80 @@ export default function POSPage() {
 
   const removeItem = (key) => setCart(prev => prev.filter(i => i.key !== key));
   const clearCart = () => { setCart([]); setCustomer(null); setOrderDiscount(0); };
+
+  const handleBarcodeKeyDown = async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const code = barcodeInput.trim();
+      if (!code) return;
+      try {
+        const res = await productAPI.getByBarcode(code);
+        if (res.data?.product && res.data?.matchedVariant) {
+          addToCart(res.data.product, res.data.matchedVariant);
+          setBarcodeInput('');
+        } else {
+          toast.error('Barcode not found');
+        }
+      } catch {
+        toast.error(`No item found for barcode: ${code}`);
+      }
+    }
+  };
+
+  const holdCart = () => {
+    if (!cart.length) return toast.error('Cart is empty');
+    const newHold = {
+      id: Date.now().toString(),
+      cart: [...cart],
+      customer,
+      orderDiscount,
+      total,
+      itemsCount: cart.reduce((s, i) => s + i.quantity, 0),
+      timestamp: new Date().toISOString(),
+      customerName: customer?.name || 'Walk-in Customer',
+    };
+    const updated = [newHold, ...heldCarts];
+    setHeldCarts(updated);
+    localStorage.setItem('pos_held_carts', JSON.stringify(updated));
+    clearCart();
+    toast.success('Cart placed on hold');
+  };
+
+  const recallCart = (held) => {
+    setCart(held.cart);
+    setCustomer(held.customer || null);
+    setOrderDiscount(held.orderDiscount || 0);
+    const updated = heldCarts.filter(c => c.id !== held.id);
+    setHeldCarts(updated);
+    localStorage.setItem('pos_held_carts', JSON.stringify(updated));
+    setShowRecallModal(false);
+    toast.success('Cart restored');
+  };
+
+  const deleteHeldCart = (id) => {
+    const updated = heldCarts.filter(c => c.id !== id);
+    setHeldCarts(updated);
+    localStorage.setItem('pos_held_carts', JSON.stringify(updated));
+    toast.success('Held cart removed');
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'F2') {
+        e.preventDefault();
+        searchRef.current?.focus?.();
+      } else if (e.key === 'F9') {
+        e.preventDefault();
+        if (cart.length > 0) setShowCheckout(true);
+      } else if (e.key === 'Escape') {
+        setShowCheckout(false);
+        setSizeModal(null);
+        setShowRecallModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [cart.length]);
 
   // Calculations
   const { subtotal, discountAmt, afterDiscount, taxAmt, total, cashChange, partialDue, effectivePaid, dueAmount } = useMemo(() => {
@@ -347,9 +439,32 @@ export default function POSPage() {
       {/* Left: Products */}
       <div className="flex-1 flex flex-col min-w-0 border-r border-surface-200 dark:border-surface-800">
         {/* Filters */}
-        <div className="p-3 border-b border-surface-100 dark:border-surface-800 flex gap-2 flex-wrap">
+        <div className="p-3 border-b border-surface-100 dark:border-surface-800 flex gap-2 flex-wrap items-center">
           <div className="flex-1 min-w-[180px]">
-            <SearchInput value={search} onChange={setSearch} placeholder="Search shoes, brand, SKU…" icon={<HiOutlineMagnifyingGlass />} />
+            <SearchInput
+              inputRef={searchRef}
+              value={search}
+              onChange={setSearch}
+              placeholder="Search shoes, brand, SKU… (F2)"
+              icon={<HiOutlineMagnifyingGlass />}
+            />
+          </div>
+          <div className="relative w-48">
+            <input
+              ref={barcodeInputRef}
+              type="text"
+              value={barcodeInput}
+              onChange={(e) => setBarcodeInput(e.target.value)}
+              onKeyDown={handleBarcodeKeyDown}
+              placeholder="Scan Barcode (Enter)…"
+              className="input pl-8 pr-2 text-xs py-2 font-mono"
+            />
+            <span className="absolute left-2.5 top-2.5 text-surface-400 text-sm">
+              <HiOutlineQrCode />
+            </span>
+          </div>
+          <div className="hidden xl:flex items-center text-[10px] text-surface-400 font-mono bg-surface-100 dark:bg-surface-800 px-2 py-1.5 rounded-lg border border-surface-200/50 dark:border-surface-700/50">
+            <span>F2: Search · F9: Pay · Esc: Close</span>
           </div>
           <div className="flex gap-1.5 overflow-x-auto">
             <button onClick={() => setSelectedCategory('')}
@@ -443,8 +558,27 @@ export default function POSPage() {
                 {cart.reduce((s, i) => s + i.quantity, 0)}
               </span>
             )}
+            {heldCarts.length > 0 && (
+              <button
+                onClick={() => setShowRecallModal(true)}
+                className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 hover:bg-amber-200 transition-colors"
+                title="View held carts"
+              >
+                <HiOutlineBookmark className="text-xs" />
+                <span>Held ({heldCarts.length})</span>
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-2">
+            {cart.length > 0 && (
+              <button
+                onClick={holdCart}
+                className="text-xs text-surface-500 hover:text-amber-500 flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors"
+                title="Hold this cart"
+              >
+                <HiOutlinePause className="text-xs" /> Hold
+              </button>
+            )}
             <button onClick={() => setShowCustomerPanel(s => !s)}
               className={`text-xs font-medium flex items-center gap-1 transition-colors px-2 py-1 rounded-lg ${customer ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400' : 'text-surface-500 hover:text-brand-500'}`}>
               {customer ? (
@@ -798,6 +932,56 @@ export default function POSPage() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Held Carts modal */}
+      <Modal open={showRecallModal} onClose={() => setShowRecallModal(false)} title="Saved & Held Carts" size="md">
+        <div className="p-6 space-y-4">
+          {heldCarts.length === 0 ? (
+            <div className="text-center py-8 text-surface-400 text-xs">
+              <HiOutlineBookmark className="text-3xl mx-auto mb-2 opacity-50" />
+              <p>No held carts at the moment.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+              {heldCarts.map((held) => (
+                <div key={held.id} className="p-4 rounded-2xl bg-surface-50 dark:bg-surface-800/60 border border-surface-100 dark:border-surface-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-surface-900 dark:text-white">
+                        {held.customerName}
+                      </span>
+                      <span className="text-[10px] bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 font-bold px-2 py-0.5 rounded-md">
+                        {held.itemsCount} item{held.itemsCount > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-brand-500">
+                      Total: {fmt(held.total)}
+                    </p>
+                    <p className="text-[10px] text-surface-400">
+                      Saved {new Date(held.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {new Date(held.timestamp).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => deleteHeldCart(held.id)}
+                      className="btn-ghost p-2 text-surface-400 hover:text-red-500 rounded-lg text-xs"
+                      title="Discard held cart"
+                    >
+                      <HiOutlineTrash className="text-base" />
+                    </button>
+                    <button
+                      onClick={() => recallCart(held)}
+                      className="btn-primary py-2 px-4 text-xs font-bold"
+                    >
+                      Recall to Cart
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </Modal>
     </div>
   );

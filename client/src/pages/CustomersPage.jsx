@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { customerAPI, orderAPI } from '../api';
 import { useSettings } from '../context/SettingsContext';
-import { Modal, Badge, SearchInput, Pagination, Empty, LoadingPage, ConfirmDialog } from '../components/UI';
+import { Modal, Badge, SearchInput, Pagination, Empty, LoadingPage, ConfirmDialog, FormError } from '../components/UI';
+import { customerSchema, validateWithZod } from '../utils/validation';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { 
@@ -85,14 +86,29 @@ export default function CustomersPage() {
     } catch { } finally { setLoadingOrders(false); }
   };
 
+  const [formErrors, setFormErrors] = useState({});
+
   const handleSave = async (e) => {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault();
+    const validation = validateWithZod(customerSchema, form);
+    if (!validation.success) {
+      setFormErrors(validation.errors);
+      toast.error(validation.firstMessage);
+      return;
+    }
+    setFormErrors({});
+    setSaving(true);
     try {
       if (editing) await customerAPI.update(editing._id, form);
       else await customerAPI.create(form);
       toast.success(editing ? 'Customer updated!' : 'Customer added!');
       setShowForm(false); setEditing(null); load(page); loadDueSummary();
-    } catch (err) { toast.error(err.response?.data?.message || 'Save failed'); }
+    } catch (err) {
+      if (err.response?.data?.fieldErrors) {
+        setFormErrors(err.response.data.fieldErrors);
+      }
+      toast.error(err.response?.data?.message || 'Save failed');
+    }
     finally { setSaving(false); }
   };
 
@@ -380,12 +396,28 @@ export default function CustomersPage() {
         <form onSubmit={handleSave} className="p-5 space-y-4">
           <div>
             <label className="label">Full Name *</label>
-            <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="input" />
+            <input
+              value={form.name}
+              onChange={e => {
+                setForm(f => ({ ...f, name: e.target.value }));
+                if (formErrors.name) setFormErrors(err => ({ ...err, name: undefined }));
+              }}
+              className={`input ${formErrors.name ? 'border-rose-500 focus:border-rose-500' : ''}`}
+            />
+            <FormError message={formErrors.name} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Phone</label>
-              <input value={form.phone || ''} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="input" />
+              <label className="label">Phone *</label>
+              <input
+                value={form.phone || ''}
+                onChange={e => {
+                  setForm(f => ({ ...f, phone: e.target.value }));
+                  if (formErrors.phone) setFormErrors(err => ({ ...err, phone: undefined }));
+                }}
+                className={`input ${formErrors.phone ? 'border-rose-500 focus:border-rose-500' : ''}`}
+              />
+              <FormError message={formErrors.phone} />
             </div>
             <div>
               <label className="label">City</label>
@@ -394,7 +426,16 @@ export default function CustomersPage() {
           </div>
           <div>
             <label className="label">Email</label>
-            <input type="email" value={form.email || ''} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="input" />
+            <input
+              type="email"
+              value={form.email || ''}
+              onChange={e => {
+                setForm(f => ({ ...f, email: e.target.value }));
+                if (formErrors.email) setFormErrors(err => ({ ...err, email: undefined }));
+              }}
+              className={`input ${formErrors.email ? 'border-rose-500 focus:border-rose-500' : ''}`}
+            />
+            <FormError message={formErrors.email} />
           </div>
           <div>
             <label className="label">Address</label>

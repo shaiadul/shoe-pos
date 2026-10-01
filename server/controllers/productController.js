@@ -1,4 +1,5 @@
 const Product = require('../models/Product');
+const logActivity = require('../utils/logActivity');
 
 exports.getProducts = async (req, res, next) => {
   try {
@@ -29,10 +30,46 @@ exports.getProduct = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+exports.getProductByBarcode = async (req, res, next) => {
+  try {
+    const { barcode } = req.params;
+    if (!barcode) return res.status(400).json({ success: false, message: 'Barcode is required' });
+
+    const product = await Product.findOne({
+      isActive: true,
+      $or: [
+        { 'variants.barcode': barcode },
+        { 'variants.sku': barcode },
+      ],
+    }).populate('supplier', 'name company');
+
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'No product found with this barcode/SKU' });
+    }
+
+    const matchedVariant = product.variants.find(
+      v => v.barcode === barcode || v.sku === barcode
+    );
+
+    res.json({ success: true, product, matchedVariant });
+  } catch (err) { next(err); }
+};
+
 exports.createProduct = async (req, res, next) => {
   try {
     const product = await Product.create(req.body);
     req.app.get('io').emit('productCreated', product);
+
+    logActivity({
+      action: 'PRODUCT_CREATED',
+      description: `Added new product "${product.name}" (${product.brand})`,
+      user: req.user,
+      entityType: 'Product',
+      entityId: product._id,
+      metadata: { brand: product.brand, price: product.price, totalStock: product.totalStock },
+      ip: req.ip,
+    });
+
     res.status(201).json({ success: true, product });
   } catch (err) { next(err); }
 };
@@ -42,6 +79,17 @@ exports.updateProduct = async (req, res, next) => {
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
     req.app.get('io').emit('productUpdated', product);
+
+    logActivity({
+      action: 'PRODUCT_UPDATED',
+      description: `Updated product "${product.name}"`,
+      user: req.user,
+      entityType: 'Product',
+      entityId: product._id,
+      metadata: { price: product.price, totalStock: product.totalStock },
+      ip: req.ip,
+    });
+
     res.json({ success: true, product });
   } catch (err) { next(err); }
 };
@@ -50,6 +98,16 @@ exports.deleteProduct = async (req, res, next) => {
   try {
     const product = await Product.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
     if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+
+    logActivity({
+      action: 'PRODUCT_DELETED',
+      description: `Deactivated product "${product.name}"`,
+      user: req.user,
+      entityType: 'Product',
+      entityId: product._id,
+      ip: req.ip,
+    });
+
     res.json({ success: true, message: 'Product deleted' });
   } catch (err) { next(err); }
 };
@@ -71,6 +129,17 @@ exports.updateStock = async (req, res, next) => {
     
     await product.save();
     req.app.get('io').emit('stockUpdated', { productId: product._id, totalStock: product.totalStock });
+
+    logActivity({
+      action: 'STOCK_UPDATED',
+      description: `Stock updated for "${product.name}" (Total: ${product.totalStock})`,
+      user: req.user,
+      entityType: 'Product',
+      entityId: product._id,
+      metadata: { variantUpdates, totalStock: product.totalStock },
+      ip: req.ip,
+    });
+
     res.json({ success: true, product });
   } catch (err) { next(err); }
 };

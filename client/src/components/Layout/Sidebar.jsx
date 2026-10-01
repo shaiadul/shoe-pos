@@ -2,7 +2,6 @@ import { NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import { useSettings } from "../../context/SettingsContext";
-import { tr } from "date-fns/locale";
 
 import {
   HiOutlineHome,
@@ -10,9 +9,11 @@ import {
   HiOutlineShoppingCart,
   HiOutlineCube,
   HiOutlineClipboardDocumentList,
+  HiOutlineBanknotes,
   HiOutlineUsers,
   HiOutlineTruck,
   HiOutlineChartBar,
+  HiOutlineShieldCheck,
   HiOutlineUserGroup,
   HiOutlineCog6Tooth,
 } from "react-icons/hi2";
@@ -31,10 +32,12 @@ const navItems = [
     icon: <HiOutlineClipboardDocumentList />,
     label: "Sales History",
   },
+  { to: "/expenses", icon: <HiOutlineBanknotes />, label: "Expenses" },
   { to: "/customers", icon: <HiOutlineUsers />, label: "Customers" },
   { to: "/suppliers", icon: <HiOutlineTruck />, label: "Suppliers" },
   { to: "/reports", icon: <HiOutlineChartBar />, label: "Analytics" },
-  { to: "/users", icon: <HiOutlineUserGroup />, label: "Staff Management" },
+  { to: "/activity-log", icon: <HiOutlineShieldCheck />, label: "Audit Logs", adminOnly: true },
+  { to: "/users", icon: <HiOutlineUserGroup />, label: "Staff Management", adminOnly: true },
   { to: "/settings", icon: <HiOutlineCog6Tooth />, label: "Settings" },
 ];
 
@@ -85,7 +88,9 @@ export default function Sidebar({ open, onClose }) {
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-1">
-          {navItems.map((item) => (
+          {navItems
+            .filter((item) => !item.adminOnly || user?.role === 'admin')
+            .map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
