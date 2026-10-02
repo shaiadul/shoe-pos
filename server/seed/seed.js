@@ -84,16 +84,26 @@ async function seedDB() {
 
   await Product.insertMany(productsToSeed);
 
+  const adminEmail = (process.env.ADMIN_EMAIL || 'admin@solemate.com').toLowerCase().trim();
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+  const adminName = process.env.ADMIN_NAME || 'Admin User';
+  const adminPhone = process.env.ADMIN_PHONE || '+880 1711-111111';
+
+  const staffEmail = (process.env.STAFF_EMAIL || 'staff@solemate.com').toLowerCase().trim();
+  const staffPassword = process.env.STAFF_PASSWORD || 'staff123';
+  const staffName = process.env.STAFF_NAME || 'Sales Staff';
+  const staffPhone = process.env.STAFF_PHONE || '+880 1733-333333';
+
   await User.create([
-    { name: 'Admin User', email: 'admin@solemate.com', password: 'admin123', role: 'admin', phone: '+880 1711-111111' },
-    { name: 'Sales Staff', email: 'staff@solemate.com', password: 'staff123', role: 'staff', phone: '+880 1733-333333' },
+    { name: adminName, email: adminEmail, password: adminPassword, role: 'admin', phone: adminPhone },
+    { name: staffName, email: staffEmail, password: staffPassword, role: 'staff', phone: staffPhone },
   ]);
   console.log('✅ Users, Products, Customers & Suppliers seeded');
 
   console.log('\n🎉 Seed complete!\n');
-  console.log('📋 Login credentials:');
-  console.log('   Admin:  admin@solemate.com / admin123');
-  console.log('   Staff:  staff@solemate.com / staff123\n');
+  console.log('📋 Login accounts ready:');
+  console.log(`   Admin:  ${adminEmail}`);
+  console.log(`   Staff:  ${staffEmail}\n`);
   process.exit(0);
 }
 

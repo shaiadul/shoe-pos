@@ -55,6 +55,7 @@ app.set('io', io);
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/auth', require('./routes/auth')); // Alias for direct /auth requests
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/customers', require('./routes/customers'));

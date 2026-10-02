@@ -19,9 +19,9 @@ const registerSchema = z.object({
     .toLowerCase(),
   password: z.string({ required_error: 'Password is required' })
     .min(6, 'Password must be at least 6 characters'),
-  role: z.enum(['admin', 'cashier', 'manager'], {
-    errorMap: () => ({ message: 'Role must be either admin, cashier, or manager' }),
-  }).optional().default('cashier'),
+  role: z.enum(['admin', 'cashier', 'manager', 'staff'], {
+    errorMap: () => ({ message: 'Role must be either admin, staff, cashier, or manager' }),
+  }).optional().default('staff'),
   phone: z.string().optional().default(''),
   store: z.string().optional().default('Main Store'),
 });

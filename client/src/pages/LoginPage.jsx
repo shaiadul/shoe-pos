@@ -8,9 +8,15 @@ import { toast } from "sonner";
 import { HiOutlineShoppingBag, HiOutlineArchiveBox, HiOutlineKey, HiOutlineShieldCheck } from "react-icons/hi2";
 
 export default function LoginPage() {
+  const demoAdminEmail = import.meta.env.VITE_DEMO_ADMIN_EMAIL || "";
+  const demoAdminPassword = import.meta.env.VITE_DEMO_ADMIN_PASSWORD || "";
+  const demoStaffEmail = import.meta.env.VITE_DEMO_STAFF_EMAIL || "";
+  const demoStaffPassword = import.meta.env.VITE_DEMO_STAFF_PASSWORD || "";
+  const showDemoCredentials = Boolean(demoAdminEmail || demoStaffEmail);
+
   const [form, setForm] = useState({
-    email: "admin@solemate.com",
-    password: "admin123",
+    email: demoAdminEmail,
+    password: demoAdminPassword,
   });
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState("");
@@ -39,7 +45,11 @@ export default function LoginPage() {
       if (err.response?.data?.fieldErrors) {
         setErrors(err.response.data.fieldErrors);
       }
-      const errorMsg = err.response?.data?.message || "Login failed. Please verify your credentials.";
+      const errorMsg =
+        err.response?.data?.message ||
+        (err.code === "ERR_NETWORK"
+          ? "Unable to reach server. Please ensure the backend is running."
+          : "Login failed. Please verify your credentials.");
       setGeneralError(errorMsg);
       toast.error("Authentication Failed", { description: errorMsg });
     } finally {
@@ -48,11 +58,12 @@ export default function LoginPage() {
   };
 
   const fillAdmin = () => {
+    if (!demoAdminEmail) return;
     setGeneralError("");
     setErrors({});
-    setForm({ email: "admin@solemate.com", password: "admin123" });
+    setForm({ email: demoAdminEmail, password: demoAdminPassword });
     toast.info("Admin credentials applied", {
-      description: "admin@solemate.com · admin123",
+      description: demoAdminEmail,
     });
   };
 
@@ -237,64 +248,68 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Default Admin Credentials Card */}
-          <div className="mt-8 p-4 rounded-2xl bg-surface-50 dark:bg-surface-900/60 border border-surface-200 dark:border-surface-800 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-2.5">
-              <div className="flex items-center gap-2">
-                <span className="p-1 rounded-lg bg-brand-500/10 text-brand-500">
-                  <HiOutlineShieldCheck className="w-4 h-4" />
-                </span>
-                <span className="text-xs font-bold tracking-tight text-surface-900 dark:text-white uppercase">
-                  Default Admin Credentials
-                </span>
+          {/* Demo Credentials Card (Only rendered when configured via VITE_DEMO_* env variables) */}
+          {showDemoCredentials && (
+            <div className="mt-8 p-4 rounded-2xl bg-surface-50 dark:bg-surface-900/60 border border-surface-200 dark:border-surface-800 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="p-1 rounded-lg bg-brand-500/10 text-brand-500">
+                    <HiOutlineShieldCheck className="w-4 h-4" />
+                  </span>
+                  <span className="text-xs font-bold tracking-tight text-surface-900 dark:text-white uppercase">
+                    Demo Quick Access
+                  </span>
+                </div>
+                {demoAdminEmail && (
+                  <button
+                    type="button"
+                    onClick={fillAdmin}
+                    className="text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 underline underline-offset-2 flex items-center gap-1 transition-colors"
+                  >
+                    <HiOutlineKey className="w-3.5 h-3.5" />
+                    Auto-fill Admin
+                  </button>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={fillAdmin}
-                className="text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 underline underline-offset-2 flex items-center gap-1 transition-colors"
-              >
-                <HiOutlineKey className="w-3.5 h-3.5" />
-                Auto-fill Admin
-              </button>
-            </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs bg-white dark:bg-surface-950 p-2.5 rounded-xl border border-surface-200/70 dark:border-surface-800/70 mb-3 font-mono">
-              <div>
-                <span className="text-surface-400 block text-[10px] uppercase font-sans font-semibold">Email</span>
-                <span className="text-surface-900 dark:text-surface-100 font-bold select-all">admin@solemate.com</span>
+              <div className="grid grid-cols-2 gap-2 text-xs bg-white dark:bg-surface-950 p-2.5 rounded-xl border border-surface-200/70 dark:border-surface-800/70 mb-3 font-mono">
+                <div>
+                  <span className="text-surface-400 block text-[10px] uppercase font-sans font-semibold">Email</span>
+                  <span className="text-surface-900 dark:text-surface-100 font-bold select-all">{demoAdminEmail || 'Configured via .env'}</span>
+                </div>
+                <div>
+                  <span className="text-surface-400 block text-[10px] uppercase font-sans font-semibold">Password</span>
+                  <span className="text-surface-900 dark:text-surface-100 font-bold select-all">{demoAdminPassword ? '••••••••' : 'Configured via .env'}</span>
+                </div>
               </div>
-              <div>
-                <span className="text-surface-400 block text-[10px] uppercase font-sans font-semibold">Password</span>
-                <span className="text-surface-900 dark:text-surface-100 font-bold select-all">admin123</span>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                {
-                  label: "Super Admin",
-                  email: "admin@solemate.com",
-                  pass: "admin123",
-                  color: "text-brand-600 dark:text-brand-400 border-brand-200 dark:border-brand-800 bg-brand-50/50 dark:bg-brand-950/30",
-                },
-                {
-                  label: "Staff Cashier",
-                  email: "staff@solemate.com",
-                  pass: "staff123",
-                  color: "text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/30",
-                },
-              ].map((a) => (
-                <button
-                  type="button"
-                  key={a.label}
-                  onClick={() => demoLogin(a.email, a.pass, a.label)}
-                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all hover:scale-[1.02] flex items-center justify-center gap-1.5 ${a.color}`}
-                >
-                  <span>{a.label}</span>
-                </button>
-              ))}
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  demoAdminEmail && {
+                    label: "Admin Login",
+                    email: demoAdminEmail,
+                    pass: demoAdminPassword,
+                    color: "text-brand-600 dark:text-brand-400 border-brand-200 dark:border-brand-800 bg-brand-50/50 dark:bg-brand-950/30",
+                  },
+                  demoStaffEmail && {
+                    label: "Staff Login",
+                    email: demoStaffEmail,
+                    pass: demoStaffPassword,
+                    color: "text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/30",
+                  },
+                ].filter(Boolean).map((a) => (
+                  <button
+                    type="button"
+                    key={a.label}
+                    onClick={() => demoLogin(a.email, a.pass, a.label)}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all hover:scale-[1.02] flex items-center justify-center gap-1.5 ${a.color}`}
+                  >
+                    <span>{a.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </motion.div>
       </div>
     </div>
