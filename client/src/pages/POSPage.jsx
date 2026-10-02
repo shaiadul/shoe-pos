@@ -34,6 +34,28 @@ export default function POSPage() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
+  // Filter states
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [selectedBrand, setSelectedBrand] = useState('');
+
+  // Extract unique brands from loaded products
+  const brandList = useMemo(() => {
+    const brands = new Set();
+    products.forEach((p) => {
+      if (p.brand?.trim()) brands.add(p.brand.trim());
+    });
+    return Array.from(brands).sort();
+  }, [products]);
+
+  // Filtered products based on brand & in-stock
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      if (inStockOnly && (!p.totalStock || p.totalStock <= 0)) return false;
+      if (selectedBrand && p.brand !== selectedBrand) return false;
+      return true;
+    });
+  }, [products, inStockOnly, selectedBrand]);
+
   // Variant Modal
   const [variantModalData, setVariantModalData] = useState(null);
 
@@ -435,6 +457,12 @@ export default function POSPage() {
       if (e.key === 'F2') {
         e.preventDefault();
         searchRef.current?.focus?.();
+      } else if (e.key === 'F3') {
+        e.preventDefault();
+        barcodeInputRef.current?.focus?.();
+      } else if (e.key === 'F8') {
+        e.preventDefault();
+        setShowCustomerModal((prev) => !prev);
       } else if (e.key === 'F9') {
         e.preventDefault();
         if (cart.length > 0 && !showCheckout && !showReceipt) {
@@ -452,9 +480,9 @@ export default function POSPage() {
   }, [cart.length, showCheckout, showReceipt]);
 
   return (
-    <div className="flex h-[calc(100vh-56px)] overflow-hidden bg-surface-50 dark:bg-surface-950">
+    <div className="flex h-full min-h-0 overflow-hidden bg-surface-50/50 dark:bg-surface-950">
       {/* Left Main Section: Catalog, Search, and Products */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <POSHeader
           search={search}
           setSearch={setSearch}
@@ -468,10 +496,15 @@ export default function POSPage() {
           onOpenHeldCarts={() => setShowRecallModal(true)}
           searchRef={searchRef}
           barcodeInputRef={barcodeInputRef}
+          inStockOnly={inStockOnly}
+          setInStockOnly={setInStockOnly}
+          brandList={brandList}
+          selectedBrand={selectedBrand}
+          setSelectedBrand={setSelectedBrand}
         />
 
         <ProductGrid
-          products={products}
+          products={filteredProducts}
           loading={loading}
           hasMore={hasMore}
           loadingMore={loadingMore}
@@ -482,6 +515,8 @@ export default function POSPage() {
           onResetFilters={() => {
             setSearch('');
             setSelectedCategory('');
+            setSelectedBrand('');
+            setInStockOnly(false);
           }}
         />
       </div>

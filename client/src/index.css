@@ -160,13 +160,55 @@ body {
   background: #ffffff;
   color: #111827;
   font-family: 'Courier New', Courier, monospace;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.06);
   position: relative;
 }
 
-.receipt-zigzag-top {
-  background: radial-gradient(circle, transparent, transparent 50%, #ffffff 50%, #ffffff 100%);
+/* Zigzag saw-tooth cut effect for thermal receipt */
+.receipt-sawtooth-top {
+  background: radial-gradient(circle at 10px 0, transparent 0, transparent 4px, #ffffff 4.5px);
   background-size: 10px 10px;
+  height: 8px;
+  width: 100%;
+}
+
+.receipt-sawtooth-bottom {
+  background: radial-gradient(circle at 10px 8px, transparent 0, transparent 4px, #ffffff 4.5px);
+  background-size: 10px 10px;
+  height: 8px;
+  width: 100%;
+}
+
+/* POS scanner pulse animation */
+@keyframes scannerPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+}
+
+.scanner-active-pulse {
+  animation: scannerPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* POS custom smooth scrollbars */
+.pos-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.pos-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pos-scroll::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.25);
+  border-radius: 999px;
+}
+.pos-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.45);
 }
 
 /* Animations */
@@ -180,4 +222,5 @@ body {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
+
 
