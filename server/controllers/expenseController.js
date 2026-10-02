@@ -1,147 +1,77 @@
-const Expense = require('../models/Expense');
-const logActivity = require('../utils/logActivity');
+const BaseController = require('../core/BaseController');
+const expenseService = require('../services/expenseService');
 
-exports.getExpenses = async (req, res, next) => {
-  try {
-    const { category, startDate, endDate, page = 1, limit = 20, search } = req.query;
-    const query = {};
-    if (category) query.category = category;
-    if (search) query.title = new RegExp(search, 'i');
-    if (startDate || endDate) {
-      query.date = {};
-      if (startDate) query.date.$gte = new Date(startDate);
-      if (endDate) { const end = new Date(endDate); end.setHours(23, 59, 59, 999); query.date.$lte = end; }
+class ExpenseController extends BaseController {
+  constructor(service = expenseService) {
+    super();
+    this.service = service;
+  }
+
+  async getExpenses(req, res, next) {
+    try {
+      const { expenses, total, totalAmount, page, limit } = await this.service.getExpenses(req.query);
+      return this.sendPaginated(res, expenses, total, page, limit, 'expenses', { totalAmount });
+    } catch (err) {
+      next(err);
     }
+  }
 
-    const total = await Expense.countDocuments(query);
-    const expenses = await Expense.find(query)
-      .populate('createdBy', 'name')
-      .sort('-date')
-      .skip((+page - 1) * +limit)
-      .limit(+limit);
+  async getExpense(req, res, next) {
+    try {
+      const expense = await this.service.getExpense(req.params.id);
+      return this.sendSuccess(res, { expense });
+    } catch (err) {
+      if (err.statusCode) return this.sendError(res, err.message, err.statusCode);
+      next(err);
+    }
+  }
 
-    // Calculate total for the filtered set
-    const totalAmount = await Expense.aggregate([
-      { $match: query },
-      { $group: { _id: null, total: { $sum: '$amount' } } },
-    ]);
+  async createExpense(req, res, next) {
+    try {
+      const expense = await this.service.createExpense(req.body, req.user, req.ip);
+      return this.sendSuccess(res, { expense }, 201);
+    } catch (err) {
+      next(err);
+    }
+  }
 
-    res.json({
-      success: true,
-      count: expenses.length,
-      total,
-      totalAmount: totalAmount[0]?.total || 0,
-      pages: Math.ceil(total / +limit),
-      page: +page,
-      expenses,
-    });
-  } catch (err) { next(err); }
-};
+  async updateExpense(req, res, next) {
+    try {
+      const expense = await this.service.updateExpense(req.params.id, req.body, req.user, req.ip);
+      return this.sendSuccess(res, { expense });
+    } catch (err) {
+      if (err.statusCode) return this.sendError(res, err.message, err.statusCode);
+      next(err);
+    }
+  }
 
-exports.getExpense = async (req, res, next) => {
-  try {
-    const expense = await Expense.findById(req.params.id).populate('createdBy', 'name');
-    if (!expense) return res.status(404).json({ success: false, message: 'Expense not found' });
-    res.json({ success: true, expense });
-  } catch (err) { next(err); }
-};
+  async deleteExpense(req, res, next) {
+    try {
+      await this.service.deleteExpense(req.params.id, req.user, req.ip);
+      return this.sendSuccess(res, { message: 'Expense deleted' });
+    } catch (err) {
+      if (err.statusCode) return this.sendError(res, err.message, err.statusCode);
+      next(err);
+    }
+  }
 
-exports.createExpense = async (req, res, next) => {
-  try {
-    const expense = await Expense.create({
-      ...req.body,
-      createdBy: req.user._id,
-      createdByName: req.user.name,
-      store: req.user.store || 'Main Store',
-    });
+  async getExpenseSummary(req, res, next) {
+    try {
+      const summary = await this.service.getExpenseSummary();
+      return this.sendSuccess(res, { summary });
+    } catch (err) {
+      next(err);
+    }
+  }
+}
 
-    logActivity({
-      action: 'EXPENSE_CREATED',
-      description: `Created expense "${expense.title}" for ${expense.amount}`,
-      user: req.user,
-      entityType: 'Expense',
-      entityId: expense._id,
-      metadata: { amount: expense.amount, category: expense.category },
-      ip: req.ip,
-    });
+const expenseController = new ExpenseController();
 
-    res.status(201).json({ success: true, expense });
-  } catch (err) { next(err); }
-};
-
-exports.updateExpense = async (req, res, next) => {
-  try {
-    const expense = await Expense.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!expense) return res.status(404).json({ success: false, message: 'Expense not found' });
-
-    logActivity({
-      action: 'EXPENSE_UPDATED',
-      description: `Updated expense "${expense.title}"`,
-      user: req.user,
-      entityType: 'Expense',
-      entityId: expense._id,
-      ip: req.ip,
-    });
-
-    res.json({ success: true, expense });
-  } catch (err) { next(err); }
-};
-
-exports.deleteExpense = async (req, res, next) => {
-  try {
-    const expense = await Expense.findByIdAndDelete(req.params.id);
-    if (!expense) return res.status(404).json({ success: false, message: 'Expense not found' });
-
-    logActivity({
-      action: 'EXPENSE_DELETED',
-      description: `Deleted expense "${expense.title}" (${expense.amount})`,
-      user: req.user,
-      entityType: 'Expense',
-      entityId: expense._id,
-      ip: req.ip,
-    });
-
-    res.json({ success: true, message: 'Expense deleted' });
-  } catch (err) { next(err); }
-};
-
-exports.getExpenseSummary = async (req, res, next) => {
-  try {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
-
-    const [todayExpenses, monthExpenses, lastMonthExpenses, byCategory] = await Promise.all([
-      Expense.aggregate([
-        { $match: { date: { $gte: today } } },
-        { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } },
-      ]),
-      Expense.aggregate([
-        { $match: { date: { $gte: thisMonth } } },
-        { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } },
-      ]),
-      Expense.aggregate([
-        { $match: { date: { $gte: lastMonth, $lte: lastMonthEnd } } },
-        { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } },
-      ]),
-      Expense.aggregate([
-        { $match: { date: { $gte: thisMonth } } },
-        { $group: { _id: '$category', total: { $sum: '$amount' }, count: { $sum: 1 } } },
-        { $sort: { total: -1 } },
-      ]),
-    ]);
-
-    res.json({
-      success: true,
-      summary: {
-        todayExpenses: todayExpenses[0]?.total || 0,
-        todayCount: todayExpenses[0]?.count || 0,
-        monthExpenses: monthExpenses[0]?.total || 0,
-        monthCount: monthExpenses[0]?.count || 0,
-        lastMonthExpenses: lastMonthExpenses[0]?.total || 0,
-        byCategory,
-      },
-    });
-  } catch (err) { next(err); }
-};
+module.exports = expenseController;
+module.exports.ExpenseController = ExpenseController;
+module.exports.getExpenses = expenseController.getExpenses;
+module.exports.getExpense = expenseController.getExpense;
+module.exports.createExpense = expenseController.createExpense;
+module.exports.updateExpense = expenseController.updateExpense;
+module.exports.deleteExpense = expenseController.deleteExpense;
+module.exports.getExpenseSummary = expenseController.getExpenseSummary;

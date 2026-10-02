@@ -1,33 +1,34 @@
-const Settings = require('../models/Settings');
-const logActivity = require('../utils/logActivity');
+const BaseController = require('../core/BaseController');
+const settingsService = require('../services/settingsService');
 
-exports.getSettings = async (req, res, next) => {
-  try {
-    let settings = await Settings.findOne();
-    if (!settings) settings = await Settings.create({});
-    res.json({ success: true, settings });
-  } catch (err) { next(err); }
-};
+class SettingsController extends BaseController {
+  constructor(service = settingsService) {
+    super();
+    this.service = service;
+  }
 
-exports.updateSettings = async (req, res, next) => {
-  try {
-    let settings = await Settings.findOne();
-    if (!settings) settings = await Settings.create(req.body);
-    else {
-      Object.assign(settings, req.body);
-      await settings.save();
+  async getSettings(req, res, next) {
+    try {
+      const settings = await this.service.getSettings();
+      return this.sendSuccess(res, { settings });
+    } catch (err) {
+      next(err);
     }
+  }
 
-    logActivity({
-      action: 'SETTINGS_UPDATED',
-      description: `Store settings updated by ${req.user.name}`,
-      user: req.user,
-      entityType: 'Settings',
-      entityId: settings._id,
-      metadata: { fields: Object.keys(req.body) },
-      ip: req.ip,
-    });
+  async updateSettings(req, res, next) {
+    try {
+      const settings = await this.service.updateSettings(req.body, req.user, req.ip);
+      return this.sendSuccess(res, { settings });
+    } catch (err) {
+      next(err);
+    }
+  }
+}
 
-    res.json({ success: true, settings });
-  } catch (err) { next(err); }
-};
+const settingsController = new SettingsController();
+
+module.exports = settingsController;
+module.exports.SettingsController = SettingsController;
+module.exports.getSettings = settingsController.getSettings;
+module.exports.updateSettings = settingsController.updateSettings;

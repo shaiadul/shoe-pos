@@ -1,113 +1,77 @@
-const Supplier = require('../models/Supplier');
-const Product = require('../models/Product');
-const logActivity = require('../utils/logActivity');
+const BaseController = require('../core/BaseController');
+const supplierService = require('../services/supplierService');
 
-exports.getSuppliers = async (req, res, next) => {
-  try {
-    const { search, page = 1, limit = 20 } = req.query;
-    const query = { isActive: true };
-    if (search) query.$or = [{ name: new RegExp(search, 'i') }, { company: new RegExp(search, 'i') }];
-    const total = await Supplier.countDocuments(query);
-    const suppliers = await Supplier.find(query).sort('-createdAt').skip((+page - 1) * +limit).limit(+limit);
-    res.json({ success: true, count: suppliers.length, total, suppliers });
-  } catch (err) { next(err); }
-};
+class SupplierController extends BaseController {
+  constructor(service = supplierService) {
+    super();
+    this.service = service;
+  }
 
-exports.getSupplier = async (req, res, next) => {
-  try {
-    const supplier = await Supplier.findById(req.params.id);
-    if (!supplier) return res.status(404).json({ success: false, message: 'Supplier not found' });
-    const products = await Product.find({ supplier: req.params.id, isActive: true });
-    res.json({ success: true, supplier, products });
-  } catch (err) { next(err); }
-};
-
-exports.createSupplier = async (req, res, next) => {
-  try {
-    const supplier = await Supplier.create(req.body);
-
-    logActivity({
-      action: 'SUPPLIER_CREATED',
-      description: `Added supplier "${supplier.name}" (${supplier.company || 'Individual'})`,
-      user: req.user,
-      entityType: 'Supplier',
-      entityId: supplier._id,
-      metadata: { company: supplier.company, phone: supplier.phone },
-      ip: req.ip,
-    });
-
-    res.status(201).json({ success: true, supplier });
-  } catch (err) { next(err); }
-};
-
-exports.updateSupplier = async (req, res, next) => {
-  try {
-    const supplier = await Supplier.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!supplier) return res.status(404).json({ success: false, message: 'Supplier not found' });
-
-    logActivity({
-      action: 'SUPPLIER_UPDATED',
-      description: `Updated supplier details for "${supplier.name}"`,
-      user: req.user,
-      entityType: 'Supplier',
-      entityId: supplier._id,
-      ip: req.ip,
-    });
-
-    res.json({ success: true, supplier });
-  } catch (err) { next(err); }
-};
-
-exports.deleteSupplier = async (req, res, next) => {
-  try {
-    const supplier = await Supplier.findByIdAndUpdate(req.params.id, { isActive: false });
-
-    if (supplier) {
-      logActivity({
-        action: 'SUPPLIER_DELETED',
-        description: `Deactivated supplier "${supplier.name}"`,
-        user: req.user,
-        entityType: 'Supplier',
-        entityId: supplier._id,
-        ip: req.ip,
-      });
+  async getSuppliers(req, res, next) {
+    try {
+      const { suppliers, total, page, limit } = await this.service.getSuppliers(req.query);
+      return this.sendPaginated(res, suppliers, total, page, limit, 'suppliers');
+    } catch (err) {
+      next(err);
     }
+  }
 
-    res.json({ success: true, message: 'Supplier deleted' });
-  } catch (err) { next(err); }
-};
-
-exports.addPurchase = async (req, res, next) => {
-  try {
-    const supplier = await Supplier.findById(req.params.id);
-    if (!supplier) return res.status(404).json({ success: false, message: 'Supplier not found' });
-    const { items, totalAmount, status, notes, invoiceNumber } = req.body;
-    supplier.purchases.push({ items, totalAmount, status, notes, invoiceNumber });
-    supplier.totalPurchased += totalAmount;
-
-    // Update product stock
-    for (const item of items) {
-      if (item.product) {
-        const product = await Product.findById(item.product);
-        if (product) {
-          const variant = product.variants.find(v => v.size === item.size);
-          if (variant) { variant.stock += item.quantity; await product.save(); }
-        }
-      }
+  async getSupplier(req, res, next) {
+    try {
+      const { supplier, products } = await this.service.getSupplier(req.params.id);
+      return this.sendSuccess(res, { supplier, products });
+    } catch (err) {
+      if (err.statusCode) return this.sendError(res, err.message, err.statusCode);
+      next(err);
     }
+  }
 
-    await supplier.save();
+  async createSupplier(req, res, next) {
+    try {
+      const supplier = await this.service.createSupplier(req.body, req.user, req.ip);
+      return this.sendSuccess(res, { supplier }, 201);
+    } catch (err) {
+      next(err);
+    }
+  }
 
-    logActivity({
-      action: 'SUPPLIER_PURCHASE',
-      description: `Recorded purchase order #${invoiceNumber || 'PO'} from "${supplier.name}" for $${totalAmount}`,
-      user: req.user,
-      entityType: 'Supplier',
-      entityId: supplier._id,
-      metadata: { invoiceNumber, totalAmount, itemCount: items?.length },
-      ip: req.ip,
-    });
+  async updateSupplier(req, res, next) {
+    try {
+      const supplier = await this.service.updateSupplier(req.params.id, req.body, req.user, req.ip);
+      return this.sendSuccess(res, { supplier });
+    } catch (err) {
+      if (err.statusCode) return this.sendError(res, err.message, err.statusCode);
+      next(err);
+    }
+  }
 
-    res.json({ success: true, supplier });
-  } catch (err) { next(err); }
-};
+  async deleteSupplier(req, res, next) {
+    try {
+      await this.service.deleteSupplier(req.params.id, req.user, req.ip);
+      return this.sendSuccess(res, { message: 'Supplier deleted' });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async addPurchase(req, res, next) {
+    try {
+      const supplier = await this.service.addPurchase(req.params.id, req.body, req.user, req.ip);
+      return this.sendSuccess(res, { supplier });
+    } catch (err) {
+      if (err.statusCode) return this.sendError(res, err.message, err.statusCode);
+      next(err);
+    }
+  }
+}
+
+const supplierController = new SupplierController();
+
+module.exports = supplierController;
+module.exports.SupplierController = SupplierController;
+module.exports.getSuppliers = supplierController.getSuppliers;
+module.exports.getSupplier = supplierController.getSupplier;
+module.exports.createSupplier = supplierController.createSupplier;
+module.exports.updateSupplier = supplierController.updateSupplier;
+module.exports.deleteSupplier = supplierController.deleteSupplier;
+module.exports.addPurchase = supplierController.addPurchase;

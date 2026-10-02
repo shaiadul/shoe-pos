@@ -1,148 +1,112 @@
-const Customer = require('../models/Customer');
-const Order = require('../models/Order');
-const logActivity = require('../utils/logActivity');
+const BaseController = require('../core/BaseController');
+const customerService = require('../services/customerService');
 
-exports.getCustomers = async (req, res, next) => {
-  try {
-    const { search, page = 1, limit = 20, hasDue } = req.query;
-    const query = { isActive: true };
-    if (search) query.$or = [
-      { name: new RegExp(search, 'i') },
-      { email: new RegExp(search, 'i') },
-      { phone: new RegExp(search, 'i') },
-    ];
-    if (hasDue === 'true') query.dueBalance = { $gt: 0 };
-    const total = await Customer.countDocuments(query);
-    const customers = await Customer.find(query).sort('-createdAt').skip((+page - 1) * +limit).limit(+limit);
-    res.json({ success: true, count: customers.length, total, pages: Math.ceil(total / +limit), customers });
-  } catch (err) { next(err); }
-};
+class CustomerController extends BaseController {
+  constructor(service = customerService) {
+    super();
+    this.service = service;
+  }
 
-exports.getCustomer = async (req, res, next) => {
-  try {
-    const customer = await Customer.findById(req.params.id);
-    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
-    const orders = await Order.find({ customer: req.params.id }).sort('-createdAt').limit(20);
-    res.json({ success: true, customer, orders });
-  } catch (err) { next(err); }
-};
-
-exports.createCustomer = async (req, res, next) => {
-  try {
-    const customer = await Customer.create(req.body);
-
-    logActivity({
-      action: 'CUSTOMER_CREATED',
-      description: `Added new customer "${customer.name}" (${customer.phone})`,
-      user: req.user,
-      entityType: 'Customer',
-      entityId: customer._id,
-      metadata: { phone: customer.phone, email: customer.email },
-      ip: req.ip,
-    });
-
-    res.status(201).json({ success: true, customer });
-  } catch (err) { next(err); }
-};
-
-exports.updateCustomer = async (req, res, next) => {
-  try {
-    const customer = await Customer.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
-
-    logActivity({
-      action: 'CUSTOMER_UPDATED',
-      description: `Updated customer profile for "${customer.name}"`,
-      user: req.user,
-      entityType: 'Customer',
-      entityId: customer._id,
-      metadata: { changes: Object.keys(req.body) },
-      ip: req.ip,
-    });
-
-    res.json({ success: true, customer });
-  } catch (err) { next(err); }
-};
-
-exports.deleteCustomer = async (req, res, next) => {
-  try {
-    const customer = await Customer.findByIdAndUpdate(req.params.id, { isActive: false });
-
-    if (customer) {
-      logActivity({
-        action: 'CUSTOMER_DELETED',
-        description: `Deactivated customer "${customer.name}"`,
-        user: req.user,
-        entityType: 'Customer',
-        entityId: customer._id,
-        ip: req.ip,
-      });
+  async getCustomers(req, res, next) {
+    try {
+      const { customers, total, page, limit } = await this.service.getCustomers(req.query);
+      return this.sendPaginated(res, customers, total, page, limit, 'customers');
+    } catch (err) {
+      next(err);
     }
+  }
 
-    res.json({ success: true, message: 'Customer deleted' });
-  } catch (err) { next(err); }
-};
+  async getCustomer(req, res, next) {
+    try {
+      const { customer, orders } = await this.service.getCustomer(req.params.id);
+      return this.sendSuccess(res, { customer, orders });
+    } catch (err) {
+      if (err.statusCode) return this.sendError(res, err.message, err.statusCode);
+      next(err);
+    }
+  }
 
-exports.searchCustomers = async (req, res, next) => {
-  try {
-    const { q } = req.query;
-    const customers = await Customer.find({
-      isActive: true,
-      $or: [{ name: new RegExp(q, 'i') }, { email: new RegExp(q, 'i') }, { phone: new RegExp(q, 'i') }]
-    }).limit(10);
-    res.json({ success: true, customers });
-  } catch (err) { next(err); }
-};
+  async createCustomer(req, res, next) {
+    try {
+      const customer = await this.service.createCustomer(req.body, req.user, req.ip);
+      return this.sendSuccess(res, { customer }, 201);
+    } catch (err) {
+      next(err);
+    }
+  }
 
-// Pay off due balance for a customer
-exports.payDue = async (req, res, next) => {
-  try {
-    const { amount, note, receivedBy } = req.body;
-    const customer = await Customer.findById(req.params.id);
-    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+  async updateCustomer(req, res, next) {
+    try {
+      const customer = await this.service.updateCustomer(req.params.id, req.body, req.user, req.ip);
+      return this.sendSuccess(res, { customer });
+    } catch (err) {
+      if (err.statusCode) return this.sendError(res, err.message, err.statusCode);
+      next(err);
+    }
+  }
 
-    const payAmount = parseFloat(amount);
-    if (payAmount <= 0) return res.status(400).json({ success: false, message: 'Amount must be greater than 0' });
-    if (payAmount > customer.dueBalance) return res.status(400).json({ success: false, message: `Cannot pay more than due balance (${customer.dueBalance})` });
+  async deleteCustomer(req, res, next) {
+    try {
+      await this.service.deleteCustomer(req.params.id, req.user, req.ip);
+      return this.sendSuccess(res, { message: 'Customer deleted' });
+    } catch (err) {
+      next(err);
+    }
+  }
 
-    customer.dueBalance -= payAmount;
-    customer.totalDuePaid += payAmount;
-    customer.totalSpent += payAmount;
-    customer.duePayments.push({
-      amount: payAmount,
-      note: note || '',
-      receivedBy: receivedBy || 'Staff',
-      paidAt: new Date(),
-    });
+  async searchCustomers(req, res, next) {
+    try {
+      const customers = await this.service.searchCustomers(req.query.q);
+      return this.sendSuccess(res, { customers });
+    } catch (err) {
+      next(err);
+    }
+  }
 
-    await customer.save();
+  async payDue(req, res, next) {
+    try {
+      const { customer, payAmount } = await this.service.payDue(
+        req.params.id,
+        req.body,
+        req.user,
+        req.ip
+      );
 
-    // Emit real-time update
-    req.app.get('io').emit('duePayment', { customerId: customer._id, dueBalance: customer.dueBalance, paidAmount: payAmount });
+      this.getIo(req)?.emit('duePayment', {
+        customerId: customer._id,
+        dueBalance: customer.dueBalance,
+        paidAmount: payAmount,
+      });
 
-    logActivity({
-      action: 'CUSTOMER_DUE_PAID',
-      description: `Collected due payment of $${payAmount.toFixed(2)} from "${customer.name}". Remaining due: $${customer.dueBalance.toFixed(2)}`,
-      user: req.user,
-      entityType: 'Customer',
-      entityId: customer._id,
-      metadata: { paidAmount: payAmount, remainingDue: customer.dueBalance, note },
-      ip: req.ip,
-    });
+      return this.sendSuccess(res, {
+        customer,
+        message: `Due payment of ${payAmount} recorded.`,
+      });
+    } catch (err) {
+      if (err.statusCode) return this.sendError(res, err.message, err.statusCode);
+      next(err);
+    }
+  }
 
-    res.json({ success: true, customer, message: `Due payment of ${payAmount} recorded.` });
-  } catch (err) { next(err); }
-};
+  async getDueSummary(req, res, next) {
+    try {
+      const { summary, topDebtors } = await this.service.getDueSummary();
+      return this.sendSuccess(res, { summary, topDebtors });
+    } catch (err) {
+      next(err);
+    }
+  }
+}
 
-// Get total due summary across all customers
-exports.getDueSummary = async (req, res, next) => {
-  try {
-    const summary = await Customer.aggregate([
-      { $match: { isActive: true, dueBalance: { $gt: 0 } } },
-      { $group: { _id: null, totalDue: { $sum: '$dueBalance' }, count: { $sum: 1 } } }
-    ]);
-    const topDebtors = await Customer.find({ isActive: true, dueBalance: { $gt: 0 } })
-      .sort('-dueBalance').limit(5).select('name phone dueBalance');
-    res.json({ success: true, summary: summary[0] || { totalDue: 0, count: 0 }, topDebtors });
-  } catch (err) { next(err); }
-};
+const customerController = new CustomerController();
+
+module.exports = customerController;
+module.exports.CustomerController = CustomerController;
+module.exports.getCustomers = customerController.getCustomers;
+module.exports.getCustomer = customerController.getCustomer;
+module.exports.createCustomer = customerController.createCustomer;
+module.exports.updateCustomer = customerController.updateCustomer;
+module.exports.deleteCustomer = customerController.deleteCustomer;
+module.exports.searchCustomers = customerController.searchCustomers;
+module.exports.payDue = customerController.payDue;
+module.exports.getDueSummary = customerController.getDueSummary;

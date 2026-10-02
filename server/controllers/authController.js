@@ -1,182 +1,113 @@
-const User = require('../models/User');
-const logActivity = require('../utils/logActivity');
-const logger = require('../utils/logger');
+const BaseController = require('../core/BaseController');
+const authService = require('../services/authService');
 
-const sendToken = (user, statusCode, res) => {
-  const token = user.getSignedJwtToken();
-  res.status(statusCode).json({
-    success: true,
-    token,
-    user: { id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar, store: user.store }
-  });
-};
+class AuthController extends BaseController {
+  constructor(service = authService) {
+    super();
+    this.service = service;
+  }
 
-exports.register = async (req, res, next) => {
-  try {
-    const { name, email, password, role, phone, store } = req.body;
-    const user = await User.create({ name, email, password, role, phone, store });
-
-    logActivity({
-      action: 'USER_CREATED',
-      description: `Created user account for "${user.name}" (${user.email}) as ${user.role}`,
-      user: req.user,
-      entityType: 'User',
-      entityId: user._id,
-      metadata: { role: user.role, email: user.email },
-      ip: req.ip,
-    });
-
-    sendToken(user, 201, res);
-  } catch (err) { next(err); }
-};
-
-exports.login = async (req, res, next) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ success: false, message: 'Please provide email and password' });
-    
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      logActivity({
-        action: 'LOGIN_FAILED',
-        description: `Failed login: No account found for ${email}`,
-        entityType: 'Auth',
-        metadata: { email, reason: 'User not found' },
-        ip: req.ip,
+  async register(req, res, next) {
+    try {
+      const result = await this.service.register(req.body, req.user, req.ip);
+      return res.status(201).json({
+        success: true,
+        ...result,
       });
-      return res.status(401).json({
-        success: false,
-        message: 'No account registered with this email address.',
-        fieldErrors: { email: 'No account registered with this email' },
-      });
+    } catch (err) {
+      next(err);
     }
+  }
 
-    if (!user.isActive) {
-      logActivity({
-        action: 'LOGIN_FAILED',
-        description: `Failed login: Deactivated account for ${email}`,
-        entityType: 'Auth',
-        metadata: { email, reason: 'Account deactivated' },
-        ip: req.ip,
-      });
-      return res.status(403).json({
-        success: false,
-        message: 'Your account has been deactivated. Please contact an administrator.',
-        fieldErrors: { email: 'Account is deactivated' },
-      });
+  async login(req, res, next) {
+    try {
+      const { email, password } = req.body;
+      const result = await this.service.login(email, password, req.ip);
+      return this.sendSuccess(res, result, 200);
+    } catch (err) {
+      if (err.statusCode) {
+        return res.status(err.statusCode).json({
+          success: false,
+          message: err.message,
+          fieldErrors: err.fieldErrors,
+        });
+      }
+      next(err);
     }
+  }
 
-    const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
-      logActivity({
-        action: 'LOGIN_FAILED',
-        description: `Failed login: Incorrect password for ${email}`,
-        user,
-        entityType: 'Auth',
-        entityId: user._id,
-        metadata: { email, reason: 'Incorrect password' },
-        ip: req.ip,
-      });
-      return res.status(401).json({
-        success: false,
-        message: 'Incorrect password. Please verify and try again.',
-        fieldErrors: { password: 'Incorrect password' },
-      });
+  async getMe(req, res, next) {
+    try {
+      const user = await this.service.getMe(req.user.id);
+      return this.sendSuccess(res, { user });
+    } catch (err) {
+      next(err);
     }
-    user.lastLogin = new Date();
-    await user.save({ validateBeforeSave: false });
+  }
 
-    logActivity({
-      action: 'LOGIN',
-      description: `${user.name} logged into POS`,
-      user,
-      entityType: 'Auth',
-      entityId: user._id,
-      metadata: { role: user.role },
-      ip: req.ip,
-    });
-
-    sendToken(user, 200, res);
-  } catch (err) { next(err); }
-};
-
-exports.getMe = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user.id);
-    res.json({ success: true, user });
-  } catch (err) { next(err); }
-};
-
-exports.updateProfile = async (req, res, next) => {
-  try {
-    const { name, phone, avatar } = req.body;
-    const user = await User.findByIdAndUpdate(req.user.id, { name, phone, avatar }, { new: true, runValidators: true });
-    res.json({ success: true, user });
-  } catch (err) { next(err); }
-};
-
-exports.changePassword = async (req, res, next) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    const user = await User.findById(req.user.id).select('+password');
-    if (!await user.matchPassword(currentPassword)) return res.status(400).json({ success: false, message: 'Current password is incorrect' });
-    user.password = newPassword;
-    await user.save();
-
-    logActivity({
-      action: 'USER_UPDATED',
-      description: `${user.name} changed their password`,
-      user,
-      entityType: 'User',
-      entityId: user._id,
-      ip: req.ip,
-    });
-
-    sendToken(user, 200, res);
-  } catch (err) { next(err); }
-};
-
-exports.getUsers = async (req, res, next) => {
-  try {
-    const users = await User.find().sort('-createdAt');
-    res.json({ success: true, count: users.length, users });
-  } catch (err) { next(err); }
-};
-
-exports.updateUser = async (req, res, next) => {
-  try {
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-
-    logActivity({
-      action: 'USER_UPDATED',
-      description: `Updated user profile/roles for "${user.name}"`,
-      user: req.user,
-      entityType: 'User',
-      entityId: user._id,
-      metadata: { changes: Object.keys(req.body) },
-      ip: req.ip,
-    });
-
-    res.json({ success: true, user });
-  } catch (err) { next(err); }
-};
-
-exports.deleteUser = async (req, res, next) => {
-  try {
-    const user = await User.findByIdAndDelete(req.params.id);
-
-    if (user) {
-      logActivity({
-        action: 'USER_DELETED',
-        description: `Deleted user "${user.name}" (${user.email})`,
-        user: req.user,
-        entityType: 'User',
-        entityId: user._id,
-        ip: req.ip,
-      });
+  async updateProfile(req, res, next) {
+    try {
+      const { name, phone, avatar } = req.body;
+      const user = await this.service.updateProfile(req.user.id, { name, phone, avatar });
+      return this.sendSuccess(res, { user });
+    } catch (err) {
+      next(err);
     }
+  }
 
-    res.json({ success: true, message: 'User deleted' });
-  } catch (err) { next(err); }
-};
+  async changePassword(req, res, next) {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const result = await this.service.changePassword(req.user.id, currentPassword, newPassword, req.ip);
+      return this.sendSuccess(res, result);
+    } catch (err) {
+      if (err.statusCode) {
+        return this.sendError(res, err.message, err.statusCode);
+      }
+      next(err);
+    }
+  }
+
+  async getUsers(req, res, next) {
+    try {
+      const users = await this.service.getUsers();
+      return this.sendSuccess(res, { count: users.length, users });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async updateUser(req, res, next) {
+    try {
+      const user = await this.service.updateUser(req.params.id, req.body, req.user, req.ip);
+      return this.sendSuccess(res, { user });
+    } catch (err) {
+      if (err.statusCode) {
+        return this.sendError(res, err.message, err.statusCode);
+      }
+      next(err);
+    }
+  }
+
+  async deleteUser(req, res, next) {
+    try {
+      await this.service.deleteUser(req.params.id, req.user, req.ip);
+      return this.sendSuccess(res, { message: 'User deleted' });
+    } catch (err) {
+      next(err);
+    }
+  }
+}
+
+const authController = new AuthController();
+
+module.exports = authController;
+module.exports.AuthController = AuthController;
+module.exports.register = authController.register;
+module.exports.login = authController.login;
+module.exports.getMe = authController.getMe;
+module.exports.updateProfile = authController.updateProfile;
+module.exports.changePassword = authController.changePassword;
+module.exports.getUsers = authController.getUsers;
+module.exports.updateUser = authController.updateUser;
+module.exports.deleteUser = authController.deleteUser;
