@@ -120,12 +120,54 @@ body {
 
 /* Print styles */
 @media print {
-  .no-print { display: none !important; }
-  .print-only { display: block !important; }
-  body { background: white; color: black; }
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+  .no-print, nav, aside, header, footer {
+    display: none !important;
+  }
+  #pos-receipt-print-area {
+    display: block !important;
+    position: static !important;
+    width: 78mm !important;
+    max-width: 78mm !important;
+    margin: 0 auto !important;
+    padding: 2mm 3mm !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  #pos-receipt-print-area * {
+    color: #000000 !important;
+    font-family: inherit !important;
+  }
 }
 
 .print-only { display: none; }
+
+/* Thermal Receipt Slip Screen Styling */
+.thermal-receipt-paper {
+  background: #ffffff;
+  color: #111827;
+  font-family: 'Courier New', Courier, monospace;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.receipt-zigzag-top {
+  background: radial-gradient(circle, transparent, transparent 50%, #ffffff 50%, #ffffff 100%);
+  background-size: 10px 10px;
+}
 
 /* Animations */
 @keyframes shimmer {
@@ -138,3 +180,4 @@ body {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
+
