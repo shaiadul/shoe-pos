@@ -12,7 +12,7 @@ A production-ready, full-stack MERN Shoe POS with a modern, Shopify-inspired UI.
 
 ### 1. Clone & Install
 ```bash
-git clone <repo-url> and
+git clone <repo-url>
 cd shoe-pos
 npm run install:all
 ```
